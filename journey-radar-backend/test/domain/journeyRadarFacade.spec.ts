@@ -1,17 +1,20 @@
 import { JourneyRadarFacade } from '../../src/domain/facade/JourneyRadarFacade';
 import { JourneyRadarCapabilities } from '../../src/domain/facade/JourneyRadarCapabilities';
 import { InMemoryIncidentReportRepository } from '../../src/adapter/repository/InMemoryIncidentReportRepository';
+import { InMemoryUserLocationRepository } from '../../src/adapter/repository/InMemoryUserLocationRepository';
 import { MockUserContextService } from '../../src/adapter/service/MockUserContextService';
 
 describe('JourneyRadarFacade (Domain Logic)', () => {
   let facade: JourneyRadarCapabilities;
   let repository: InMemoryIncidentReportRepository;
+  let userLocationRepository: InMemoryUserLocationRepository;
   let userContextService: MockUserContextService;
 
   beforeEach(() => {
     repository = new InMemoryIncidentReportRepository();
-    userContextService = new MockUserContextService();
-    facade = new JourneyRadarFacade(repository, userContextService);
+    userLocationRepository = new InMemoryUserLocationRepository();
+    userContextService = new MockUserContextService(userLocationRepository);
+    facade = new JourneyRadarFacade(repository, userContextService, userLocationRepository);
   });
 
   it('should return a healthy status', async () => {

@@ -17,4 +17,5 @@ export interface StationInputProps {
   destinationStation: Station | null;
   absolutePosition?: boolean;
   enableChevron?: boolean;
+  onSearch?: (source: string, destination: string) => void;
 }

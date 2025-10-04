@@ -50,4 +50,9 @@ export class MockJourneyRadarFacade implements JourneyRadarCapabilities {
       description
     });
   }
+
+  async mockUserLocation(userId: string, longitude: number, latitude: number): Promise<{ userId: string; longitude: number; latitude: number }> {
+    this.recordCall('mockUserLocation', [userId, longitude, latitude]);
+    return Promise.resolve({ userId, longitude, latitude });
+  }
 }

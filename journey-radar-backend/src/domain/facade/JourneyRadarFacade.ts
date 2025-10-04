@@ -2,11 +2,13 @@ import { JourneyRadarCapabilities } from './JourneyRadarCapabilities';
 import { IncidentReport } from '../model/IncidentReport';
 import { IncidentReportRepository } from '../repository/IncidentReportRepository';
 import { UserContextService } from '../service/UserContextService';
+import { UserLocationRepository } from '../repository/UserLocationRepository';
 
 export class JourneyRadarFacade implements JourneyRadarCapabilities {
   constructor(
     private readonly incidentReportRepository: IncidentReportRepository,
-    private readonly userContextService: UserContextService
+    private readonly userContextService: UserContextService,
+    private readonly userLocationRepository: UserLocationRepository
   ) {}
 
   async planJourney(params: { origin: string; destination: string }): Promise<any> {
@@ -52,5 +54,18 @@ export class JourneyRadarFacade implements JourneyRadarCapabilities {
 
     console.log(`Domain: Incident ${savedIncident.id} reported successfully by ${savedIncident.reporter.type}`);
     return savedIncident;
+  }
+
+  async mockUserLocation(userId: string, longitude: number, latitude: number): Promise<{ userId: string; longitude: number; latitude: number }> {
+    console.log(`Domain: Mocking location for user ${userId} at (${latitude}, ${longitude})`);
+
+    await this.userLocationRepository.saveLocation({
+      userId,
+      longitude,
+      latitude,
+      timestamp: new Date()
+    });
+
+    return { userId, longitude, latitude };
   }
 }
