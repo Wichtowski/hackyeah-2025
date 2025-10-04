@@ -8,6 +8,15 @@ import { Platform } from 'react-native';
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
+const themeColors = {
+  pink: '#d83189',
+  blue: '#486db1',
+  darkblue: '#365284',
+  lightblue: '#51b9ee',
+  green: '#98c254',
+  yellow: '#f9c148',
+} as const;
+
 export const Colors = {
   light: {
     text: '#11181C',
@@ -16,6 +25,7 @@ export const Colors = {
     icon: '#687076',
     tabIconDefault: '#687076',
     tabIconSelected: tintColorLight,
+    ...themeColors,
   },
   dark: {
     text: '#ECEDEE',
@@ -24,6 +34,7 @@ export const Colors = {
     icon: '#9BA1A6',
     tabIconDefault: '#9BA1A6',
     tabIconSelected: tintColorDark,
+    ...themeColors,
   },
 };
 
