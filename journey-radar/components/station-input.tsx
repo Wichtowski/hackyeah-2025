@@ -109,9 +109,11 @@ export const StationInput: React.FC<StationInputProps> = ({
                   style={[styles.inputField, { outlineStyle: 'none' }]}
                   value={sourceText}
                   onChangeText={handleSourceChange}
+                  autoCorrect={true}
                   onFocus={() => setIsSourceFocused(true)}
                   onBlur={() => setIsSourceFocused(false)}
-                  placeholder="Enter source station"
+                  autoComplete='off'
+                  placeholder="Stacja początkowa"
                   placeholderTextColor={Colors.light.icon}
                 />
                 {sourceText.length > 0 && (
@@ -136,8 +138,9 @@ export const StationInput: React.FC<StationInputProps> = ({
                   onChangeText={handleDestinationChange}
                   onFocus={() => setIsDestinationFocused(true)}
                   onBlur={() => setIsDestinationFocused(false)}
-                  placeholder="Enter destination station"
+                  placeholder="Stacja docelowa"
                   placeholderTextColor={Colors.light.icon}
+                  autoComplete='off'
                 />
                 {destinationText.length > 0 && (
                 <TouchableOpacity onPress={swapStations} style={styles.swapButton}>

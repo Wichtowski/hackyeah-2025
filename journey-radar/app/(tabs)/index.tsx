@@ -1,27 +1,15 @@
-import { useState } from 'react';
 import IncidentReportForm from '@/components/incident-report-form';
-import { StationInput } from '@/components/station-input';
-import { Header } from '@/components/header';
-import { Station } from '@/types/station';
+import {StationInput} from '@/components/station-input';
+import {Header} from '@/components/header';
 import ApiHealthButton from '@/components/api-health-button';
+import {useStationState} from '@/hooks/use-station-state';
 
 export default function HomeScreen() {
-  const [sourceStation, setSourceStation] = useState<Station | null>(null);
-  const [destinationStation, setDestinationStation] = useState<Station | null>(null);
-
-  const handleSourceChange = (station: Station | null): void => {
-    setSourceStation(station);
-    console.log('Source station set to:', station);
-  };
-
-  const handleDestinationChange = (station: Station | null): void => {
-    setDestinationStation(station);
-    console.log('Destination station set to:', station);
-  };
+  const {sourceStation, destinationStation, handleSourceChange, handleDestinationChange} = useStationState();
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
-      <Header />
+    <div style={{position: 'relative', width: '100%', height: '100vh'}}>
+      <Header/>
       <StationInput
         onSourceChange={handleSourceChange}
         onDestinationChange={handleDestinationChange}
@@ -29,7 +17,7 @@ export default function HomeScreen() {
         destinationStation={destinationStation}
         absolutePosition={false}
       />
-      <IncidentReportForm />
+      <IncidentReportForm/>
       {/* ApiHealthButton positioned to the left of TransportSelector */}
       <div
         style={{
@@ -39,7 +27,7 @@ export default function HomeScreen() {
           zIndex: 1000,
         }}
       >
-        <ApiHealthButton />
+        <ApiHealthButton/>
       </div>
     </div>
   );
