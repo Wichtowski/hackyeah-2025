@@ -1,0 +1,17 @@
+{
+  "name": "hackyeah-2025",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "journey-radar",
+    "journey-radar-backend",
+    "sdk"
+  ],
+  "scripts": {
+    "build:sdk": "npm --workspace @journey-radar/sdk run build",
+    "postinstall": "npm run build:sdk",
+    "test:backend": "npm --workspace journey-radar-backend run test",
+    "dev:backend": "npm --workspace journey-radar-backend run dev",
+    "dev:frontend": "npm --workspace journey-radar run start"
+  }
+}

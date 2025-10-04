@@ -1,0 +1,22 @@
+{
+  "name": "@journey-radar/sdk",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "pretest": "npm --workspace journey-radar-backend run build",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "axios": "^1.6.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.4",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.6.2"
+  }
+}
