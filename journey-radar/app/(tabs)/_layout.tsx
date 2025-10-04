@@ -27,6 +27,7 @@ export default function TabLayout() {
               fontSize: 12,
               fontWeight: '500',
             },
+            tabBarLabelPosition: 'below-icon',
           }}>
           <Tabs.Screen
             name="index"
