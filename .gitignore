@@ -5,6 +5,7 @@
 /.pnp
 .pnp.js
 /journey-radar-backend/node_modules
+/sdk/node_modules
 
 # testing
 /coverage
