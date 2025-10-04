@@ -7,17 +7,17 @@ export interface SeverityOption {
 export const SEVERITY_OPTIONS: SeverityOption[] = [
   {
     value: 'low',
-    label: 'Utrudnienie',
-    description: 'Drobne utrudnienia, opóźnienia do 5 minut'
+    label: 'Drobny',
+    description: 'Niewielkie utrudnienia, opóźnienia do 10 minut'
   },
   {
     value: 'medium',
-    label: 'Opóźnienie',
-    description: 'Znaczące utrudnienia, opóźnienia 5-15 minut'
+    label: 'Średni',
+    description: 'Odczuwalne utrudnienia, opóźnienia powyżej 10 minut'
   },
   {
     value: 'severe',
-    label: 'Blokada',
-    description: 'Poważne zakłócenia, opóźnienia powyżej 15 minut'
+    label: 'Poważny',
+    description: 'Opóźnienia powyżej 30 minut, sytuacje kryzysowe'
   }
 ];

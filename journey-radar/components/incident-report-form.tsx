@@ -1,13 +1,12 @@
 import React, {useState, useCallback} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView} from 'react-native';
 import {Colors} from '@/constants/theme';
-import {Ionicons} from '@expo/vector-icons';
 import SlideTab from './slide-tab';
 import {SEVERITY_OPTIONS} from '@/types/incident-severity';
 
 const IncidentReportForm: React.FC = () => {
   const [visible, setVisible] = useState(false);
-  const [selectedSeverity, setSelectedSeverity] = useState(SEVERITY_OPTIONS[0].value);
+  const [selectedSeverity, setSelectedSeverity] = useState(SEVERITY_OPTIONS[1].value);
   const [details, setDetails] = useState('');
 
   const open = useCallback(() => setVisible(true), []);
@@ -20,7 +19,7 @@ const IncidentReportForm: React.FC = () => {
   const handleSubmit = () => {
     // TODO: integrate submission logic
     setDetails('');
-    setSelectedSeverity(SEVERITY_OPTIONS[0].value);
+    setSelectedSeverity(SEVERITY_OPTIONS[1].value);
     setVisible(false);
   };
 
@@ -44,16 +43,13 @@ const IncidentReportForm: React.FC = () => {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.section}>
-            <Text style={styles.label}>Na trasie:</Text>
-            <Text style={styles.journeyText}>Kraków Gł. → Wieliczka</Text>
+            <Text style={styles.label}>Na odcinku</Text>
+            <Text style={[styles.severityItem, styles.severityContainer, styles.severityText]}>Kraków Gł. → Wieliczka</Text>
           </View>
 
           <View style={styles.section}>
             <View style={styles.labelWithIcon}>
               <Text style={styles.label}>Poziom incydentu</Text>
-              <TouchableOpacity style={styles.helpIcon} activeOpacity={0.7}>
-                <Ionicons name="help-circle-outline" size={18} color={Colors.light.icon}/>
-              </TouchableOpacity>
             </View>
 
             <View style={styles.severityContainer}>
@@ -61,15 +57,14 @@ const IncidentReportForm: React.FC = () => {
                 const selected = option.value === selectedSeverity;
                 const isLast = index === SEVERITY_OPTIONS.length - 1;
 
-                // Get severity-specific styles
                 const getSeverityStyle = (value: string, selected: boolean) => {
                   switch (value) {
                     case 'low':
-                      return selected ? styles.severityLowSelected : styles.severityLow;
+                      return styles.severityLow;
                     case 'medium':
-                      return selected ? styles.severityMediumSelected : styles.severityMedium;
+                      return styles.severityMedium;
                     case 'severe':
-                      return selected ? styles.severitySevereSelected : styles.severitySevere;
+                      return styles.severitySevere;
                     default:
                       return {};
                   }
@@ -81,18 +76,23 @@ const IncidentReportForm: React.FC = () => {
                     style={[
                       styles.severityItem,
                       getSeverityStyle(option.value, selected),
+                      selected && styles.severitySelected,
                       isLast && {borderRightWidth: 0}
                     ]}
                     onPress={() => handleSelectSeverity(option.value)}
                     activeOpacity={0.7}
                   >
-                    <Text style={[styles.severityText, selected && styles.severityTextSelected]}>
+                    <Text style={[styles.severityText, getSeverityStyle(option.value, selected)]}>
                       {option.label}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
             </View>
+
+            <Text style={styles.severityDescription}>
+              {SEVERITY_OPTIONS.find(option => option.value === selectedSeverity)?.description}
+            </Text>
           </View>
 
           <View style={styles.section}>
@@ -161,81 +161,75 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  helpIcon: {
-    marginLeft: 6,
-    top: -3,
-  },
-  journeyText: {
-    fontSize: 15,
-    color: Colors.light.text,
-  },
   severityContainer: {
     flexDirection: 'row',
     borderWidth: 1,
     borderColor: Colors.light.icon + '25',
-    borderRadius: 12,
+    borderRadius: 22,
     overflow: 'hidden',
   },
   severityItem: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 15,
     paddingHorizontal: 8,
     borderRightWidth: 1,
     borderRightColor: Colors.light.icon + '15',
     alignItems: 'center',
   },
   severityText: {
-    fontSize: 13,
-    color: Colors.light.text,
+    fontSize: 15,
+    fontWeight: '600',
     textAlign: 'center',
   },
-  severityTextSelected: {
-    fontWeight: '600',
-    color: '#fff',
-  },
   severityLow: {
-    backgroundColor: '#ffffe1',
-  },
-  severityLowSelected: {
-    backgroundColor: '#f1c232',
+    color: '#006400',
   },
   severityMedium: {
-    backgroundColor: '#fff8dd',
-  },
-  severityMediumSelected: {
-    backgroundColor: '#eb8c00',
+    color: '#B8860B',
   },
   severitySevere: {
-    backgroundColor: '#ffebee',
+    color: '#f44336',
   },
-  severitySevereSelected: {
-    backgroundColor: '#f44336',
+  severitySelected: {
+    borderWidth: 2,
+    borderRightWidth: 2,
+    borderRightColor: Colors.light.icon,
+    borderRadius: 22,
   },
   textArea: {
     minHeight: 110,
     borderWidth: 1,
     borderColor: Colors.light.icon + '25',
-    borderRadius: 12,
+    borderRadius: 22,
     padding: 12,
     fontSize: 14,
     color: Colors.light.text,
     backgroundColor: Colors.light.background,
   },
   actions: {
+    paddingVertical: 12,
     marginTop: 8,
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
   },
   submitButton: {
+    paddingVertical: 15,
     backgroundColor: Colors.light.icon,
     paddingHorizontal: 22,
-    paddingVertical: 12,
-    borderRadius: 14,
+    borderRadius: 22,
   },
   submitText: {
     color: Colors.light.background,
     fontSize: 15,
     fontWeight: '600',
+    textAlign: 'center',
+  },
+  severityDescription: {
+    fontSize: 13,
+    color: Colors.light.icon,
+    marginTop: 8,
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
 });
 
