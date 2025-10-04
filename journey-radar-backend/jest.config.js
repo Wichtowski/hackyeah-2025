@@ -7,4 +7,12 @@ module.exports = {
     '**/test/**/*.spec.ts',
     '**/tests/**/*.spec.ts'
   ],
+  moduleNameMapper: {
+    '^@domain/(.*)$': '<rootDir>/src/domain/$1',
+    '^@application/(.*)$': '<rootDir>/src/application/$1',
+    '^@adapter/(.*)$': '<rootDir>/src/adapter/$1',
+  },
+  transformIgnorePatterns: [
+    'node_modules/(?!(uuid)/)'
+  ],
 };

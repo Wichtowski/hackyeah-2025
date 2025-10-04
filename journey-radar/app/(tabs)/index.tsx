@@ -3,12 +3,13 @@ import { Alert } from 'react-native';
 import TransportSelector from '@/components/transport-selector';
 import { StationInput } from '@/components/station-input';
 import { Header } from '@/components/header';
-import { Station } from '@/types/station';
 import ApiHealthButton from '@/components/api-health-button';
 import { useRoute } from '@/contexts/RouteContext';
 import { useJourney } from '@/contexts/JourneyContext';
 import { Journey } from '@/types/journey';
 import { JourneysList } from '@/components/journeys-list';
+import { useStationState } from '@/hooks/use-station-state';
+import {Station} from "@/types/station";
 
 export default function HomeScreen() {
   const { sourceStation, destinationStation, setSourceStation, setDestinationStation } = useRoute();
@@ -95,19 +96,6 @@ export default function HomeScreen() {
         onDeleteJourney={handleDeleteJourney}
         showActions={true}
       />
-
-      <TransportSelector />
-      {/* ApiHealthButton positioned to the left of TransportSelector */}
-      <div
-        style={{
-          position: 'absolute',
-          bottom: '100px',
-          right: '100px',
-          zIndex: 1000,
-        }}
-      >
-        <ApiHealthButton />
-      </div>
     </div>
   );
 }

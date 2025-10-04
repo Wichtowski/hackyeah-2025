@@ -9,8 +9,6 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import SlideTab from '@/components/slide-tab';
-import DefaultCommuteSettings from '@/components/default-commute-settings';
-import { CommuteType } from '@/types/commuting';
 
 interface HeaderProps {
   absolutePosition?: boolean;
@@ -19,12 +17,6 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ absolutePosition = false, onSettingsPress }) => {
   const [isSlideTabVisible, setIsSlideTabVisible] = useState(false);
-  const [defaultCommuteType, setDefaultCommuteType] = useState<CommuteType | null>(null);
-
-  const handleCommuteTypeSelect = (type: CommuteType): void => {
-    setDefaultCommuteType(type);
-    console.log('Default commute type set to:', type);
-  };
 
   return (
     <>
@@ -33,20 +25,17 @@ export const Header: React.FC<HeaderProps> = ({ absolutePosition = false, onSett
           <Text style={styles.projectTitle}>Journey Radar</Text>
           <FontAwesome name="map" size={20} style={{ marginLeft: 8 }} color={Colors.light.blue} />
         </View>
-        <TouchableOpacity onPress={() => setIsSlideTabVisible(true)} style={styles.settingsButton}>
-          <Ionicons name="settings" size={20} color={Colors.light.icon} />
+        <TouchableOpacity onPress={() => setIsSlideTabVisible(true)} style={styles.notificationsButton}>
+          <Ionicons name="notifications" size={20} color={Colors.light.icon} />
         </TouchableOpacity>
       </View>
 
       <SlideTab
         visible={isSlideTabVisible}
         onClose={() => setIsSlideTabVisible(false)}
-        title="Commute Settings"
+        title="Notifications"
       >
-        <DefaultCommuteSettings
-          selectedType={defaultCommuteType}
-          onTypeSelect={handleCommuteTypeSelect}
-        />
+        <div>TBD</div>
       </SlideTab>
     </>
   );
@@ -75,7 +64,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.light.text,
   },
-  settingsButton: {
+  notificationsButton: {
     position: 'absolute',
     right: 20,
     padding: 8,

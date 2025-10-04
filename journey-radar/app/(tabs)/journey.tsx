@@ -9,7 +9,6 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const sampleJourney: Journey = {
   id: '1',
-  title: 'Aktywna trasa do Praga Południe',
   distance: 250000,
   duration: 14400,
   routes: [
@@ -190,11 +189,15 @@ const RouteSection: React.FC<{
           incident => incident.stationId === station.id
         );
         
+        const hasIncidentBefore = route.stations.slice(0, index).some((prevStation) =>
+          route.incidents.some((incident) => incident.stationId === prevStation.id)
+        );
+
         return (
           <View key={station.id}>
             <StationNode
               station={station}
-              delay={route.delay}
+              delay={hasIncidentBefore ? route.delay : undefined}
               colors={colors}
             />
             {index < route.stations.length - 1 && stationIncidents.length > 0 && (
@@ -225,23 +228,15 @@ export default function JourneyScreen(): React.JSX.Element {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
+  const lastRouteStationName = sampleJourney.routes[sampleJourney.routes.length - 1].stations[sampleJourney.routes[sampleJourney.routes.length - 1].stations.length - 1].name;
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.scrollView}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <MaterialIcons name="arrow-back" size={24} color={colors.text} />
             <View style={styles.headerTitle}>
-              <View style={styles.communityBadge}>
-                <MaterialIcons name="train" size={16} color={colors.blue} />
-                <MaterialIcons name="train" size={16} color={colors.blue} />
-                <MaterialIcons name="train" size={16} color={colors.blue} />
-                <Text style={[styles.communityText, { color: colors.blue }]}>
-                  COMMUNITY-DRIVEN PUBLIC TRANSPORT
-                </Text>
-              </View>
               <Text style={[styles.mainTitle, { color: colors.text }]}>
-                {sampleJourney.title}
+                {sampleJourney.title || `Aktywna trasa do ${lastRouteStationName}`}
               </Text>
             </View>
           </View>
