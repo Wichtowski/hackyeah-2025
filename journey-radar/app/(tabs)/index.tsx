@@ -1,23 +1,11 @@
-import { useState } from 'react';
 import TransportSelector from '@/components/transport-selector';
 import { StationInput } from '@/components/station-input';
 import { Header } from '@/components/header';
-import { Station } from '@/types/station';
 import ApiHealthButton from '@/components/api-health-button';
+import { useStationState } from '@/hooks/use-station-state';
 
 export default function HomeScreen() {
-  const [sourceStation, setSourceStation] = useState<Station | null>(null);
-  const [destinationStation, setDestinationStation] = useState<Station | null>(null);
-
-  const handleSourceChange = (station: Station | null): void => {
-    setSourceStation(station);
-    console.log('Source station set to:', station);
-  };
-
-  const handleDestinationChange = (station: Station | null): void => {
-    setDestinationStation(station);
-    console.log('Destination station set to:', station);
-  };
+  const { sourceStation, destinationStation, handleSourceChange, handleDestinationChange } = useStationState();
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
