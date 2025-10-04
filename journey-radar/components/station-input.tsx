@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -26,6 +26,15 @@ export const StationInput: React.FC<StationInputProps> = ({
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isSourceFocused, setIsSourceFocused] = useState<boolean>(false);
   const [isDestinationFocused, setIsDestinationFocused] = useState<boolean>(false);
+
+  // Update local text states when props change (from context)
+  useEffect(() => {
+    setSourceText(sourceStation?.name || '');
+  }, [sourceStation]);
+
+  useEffect(() => {
+    setDestinationText(destinationStation?.name || '');
+  }, [destinationStation]);
 
   const handleSourceChange = (text: string): void => {
     setSourceText(text);

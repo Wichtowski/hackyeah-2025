@@ -1,3 +1,5 @@
+import {CommuteType} from "@/types/commuting";
+
 export interface Station {
   id: string;
   name: string;
@@ -5,7 +7,7 @@ export interface Station {
     latitude: number;
     longitude: number;
   };
-  type: 'bus' | 'tram' | 'train';
+  type: CommuteType;
 }
 
 export interface StationInputProps {
