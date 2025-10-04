@@ -69,10 +69,7 @@ const ApiHealthButton: React.FC = () => {
             flexDirection: 'row',
             alignItems: 'center',
             gap: 8,
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.3,
-            shadowRadius: 4,
+            boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.3)',
             elevation: 4,
             minWidth: 90,
             justifyContent: 'center'

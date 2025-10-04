@@ -18,10 +18,14 @@ export const StationInput: React.FC<StationInputProps> = ({
   onDestinationChange,
   sourceStation,
   destinationStation,
+  absolutePosition = true,
+  enableChevron = false,
 }) => {
   const [sourceText, setSourceText] = useState<string>(sourceStation?.name || '');
   const [destinationText, setDestinationText] = useState<string>(destinationStation?.name || '');
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [isSourceFocused, setIsSourceFocused] = useState<boolean>(false);
+  const [isDestinationFocused, setIsDestinationFocused] = useState<boolean>(false);
 
   const handleSourceChange = (text: string): void => {
     setSourceText(text);
@@ -89,21 +93,24 @@ export const StationInput: React.FC<StationInputProps> = ({
     setIsCollapsed(!isCollapsed);
   };
 
+
   return (
-    <View style={[styles.container, isCollapsed && styles.collapsedContainer]}>
-      <View style={[styles.inputContainer, isCollapsed && styles.collapsedInputContainer]}>
-        {!isCollapsed && (
+    <View style={[styles.container, !absolutePosition && styles.relativeContainer, enableChevron && isCollapsed && styles.collapsedContainer]}>
+      <View style={[styles.inputContainer, enableChevron && isCollapsed && styles.collapsedInputContainer]}>
+        {(!enableChevron || !isCollapsed) && (
           <>
-            <View style={styles.inputWrapper}>
-              <View style={styles.inputHeader}>
-                <Ionicons name="location" size={16} color={Colors.light.icon} />
-                <Text style={styles.inputLabel}>From</Text>
-              </View>
-              <View style={styles.inputFieldContainer}>
+            <View>
+              <View style={[styles.inputFieldContainer, isSourceFocused && styles.inputFieldContainerFocused]}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="location" size={20} color={Colors.light.icon} />
+                </View>
                 <TextInput
-                  style={styles.inputField}
+                  id="source-station"
+                  style={[styles.inputField, { outlineStyle: 'none' }]}
                   value={sourceText}
                   onChangeText={handleSourceChange}
+                  onFocus={() => setIsSourceFocused(true)}
+                  onBlur={() => setIsSourceFocused(false)}
                   placeholder="Enter source station"
                   placeholderTextColor={Colors.light.icon}
                 />
@@ -115,40 +122,42 @@ export const StationInput: React.FC<StationInputProps> = ({
               </View>
             </View>
 
-            <TouchableOpacity onPress={swapStations} style={styles.swapButton}>
-              <Ionicons name="swap-vertical" size={20} color={Colors.light.icon} />
-            </TouchableOpacity>
-
-            <View style={styles.inputWrapper}>
-              <View style={styles.inputHeader}>
-                <Ionicons name="flag" size={16} color={Colors.light.icon} />
-                <Text style={styles.inputLabel}>To</Text>
-              </View>
-              <View style={styles.inputFieldContainer}>
+            <View style={styles.separatorLine} />
+            
+            <View>
+              <View style={[styles.inputFieldContainer, isDestinationFocused && styles.inputFieldContainerFocused]}>
+                <View style={styles.iconContainer}>
+                  <Ionicons name="flag" size={20} color={Colors.light.icon} />
+                </View>
                 <TextInput
-                  style={styles.inputField}
+                  id="destination-station"
+                  style={[styles.inputField, { outlineStyle: 'none' }]}
                   value={destinationText}
                   onChangeText={handleDestinationChange}
+                  onFocus={() => setIsDestinationFocused(true)}
+                  onBlur={() => setIsDestinationFocused(false)}
                   placeholder="Enter destination station"
                   placeholderTextColor={Colors.light.icon}
                 />
                 {destinationText.length > 0 && (
-                  <TouchableOpacity onPress={clearDestination} style={styles.clearButton}>
-                    <Ionicons name="close-circle" size={20} color={Colors.light.icon} />
-                  </TouchableOpacity>
+                <TouchableOpacity onPress={swapStations} style={styles.swapButton}>
+                  <Ionicons name="swap-vertical" size={20} color={Colors.light.icon} />
+                </TouchableOpacity>
                 )}
               </View>
             </View>
           </>
         )}
         
-        <TouchableOpacity onPress={toggleCollapse} style={styles.toggleButton}>
-          <Ionicons 
-            name={isCollapsed ? "chevron-down" : "chevron-up"} 
-            size={24} 
-            color={Colors.light.icon} 
-          />
-        </TouchableOpacity>
+        {enableChevron && (
+          <TouchableOpacity onPress={toggleCollapse} style={styles.toggleButton}>
+            <Ionicons 
+              name={isCollapsed ? "chevron-down" : "chevron-up"} 
+              size={24} 
+              color={Colors.light.icon} 
+            />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -163,6 +172,11 @@ const styles = StyleSheet.create({
     zIndex: 2000,
     paddingHorizontal: 0,
   },
+  relativeContainer: {
+    position: 'relative',
+    top: 0,
+    zIndex: 1,
+  },
   collapsedContainer: {
     top: 0,
     bottom: 'auto',
@@ -175,13 +189,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
     padding: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.25)',
     elevation: 8,
     width: '100%',
   },
@@ -197,17 +205,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
     borderWidth: 1,
     borderColor: Colors.light.icon + '30',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.25)',
     elevation: 8,
-  },
-  inputWrapper: {
-    marginBottom: 12,
   },
   inputHeader: {
     flexDirection: 'row',
@@ -220,30 +219,41 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     marginLeft: 8,
   },
+  iconContainer: {
+    padding: 8,
+    marginRight: 8,
+  },
+  separatorLine: {
+    height: 1,
+    backgroundColor: Colors.light.icon + '30',
+    marginVertical: 8,
+    marginHorizontal: 16,
+  },
   inputFieldContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.light.icon + '30',
     borderRadius: 8,
     paddingHorizontal: 12,
     backgroundColor: Colors.light.background,
+    borderWidth: 0,
+  },
+  inputFieldContainerFocused: {
+    backgroundColor: '#f1f1f1',
+    borderWidth: 0,
   },
   inputField: {
     flex: 1,
     height: 44,
     fontSize: 16,
     color: Colors.light.text,
+    borderWidth: 0,
   },
   clearButton: {
     padding: 4,
   },
   swapButton: {
-    alignSelf: 'center',
-    padding: 8,
-    backgroundColor: Colors.light.icon + '20',
-    borderRadius: 20,
-    marginVertical: 8,
+    padding: 4,
+    marginLeft: 8,
   },
   toggleButton: {
     padding: 8,
