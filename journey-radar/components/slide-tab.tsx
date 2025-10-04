@@ -26,7 +26,7 @@ const SlideTab: React.FC<SlideTabProps> = ({
   onClose,
   children,
   title = 'Details',
-  width = SCREEN_WIDTH * 0.85,
+  width = SCREEN_WIDTH * 0.7,
 }) => {
   const insets = useSafeAreaInsets();
   const translateX = useSharedValue(width);
