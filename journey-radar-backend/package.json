@@ -1,15 +1,17 @@
 {
   "name": "journey-radar-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend service for Journey Radar using Hexagonal Architecture.",
+  "main": "dist/application/index.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
+    "start": "node dist/application/index.js",
+    "build": "tsc",
+    "dev": "ts-node-dev src/application/index.ts",
     "test": "jest",
-    "dev": "ts-node-dev --respawn src/index.ts",
-    "build": "tsc"
+    "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "",
