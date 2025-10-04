@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router';
 import { useRoute } from '@/contexts/RouteContext';
 import { useJourney } from '@/contexts/JourneyContext';
 import { Journey } from '@/types/journey';
-import { Station } from '@/types/station';
 import { JourneysList } from '@/components/journeys-list';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -52,36 +51,15 @@ export default function FavouritesScreen() {
       return;
     }
 
-    // Create station objects from the journey data (convert from journey Station to app Station)
-    const sourceStation: Station = {
-      id: firstStation.id,
-      name: firstStation.name,
-      coordinates: {
-        latitude: firstStation.position?.latitude || 52.2297,
-        longitude: firstStation.position?.longitude || 21.0122
-      },
-      type: firstRoute.communicationMethod === 'train' ? 'train' : 'bus'
-    };
-
-    const destinationStation: Station = {
-      id: lastStation.id,
-      name: lastStation.name,
-      coordinates: {
-        latitude: lastStation.position?.latitude || 52.2319,
-        longitude: lastStation.position?.longitude || 21.0067
-      },
-      type: lastRoute.communicationMethod === 'train' ? 'train' : 'bus'
-    };
-
-    // Set the stations in the route context
-    setSourceStation(sourceStation);
-    setDestinationStation(destinationStation);
+    // Set the stations in the route context (now using journey Station type directly)
+    setSourceStation(firstStation);
+    setDestinationStation(lastStation);
 
     // Set as current journey
     setCurrentJourney(journey);
 
     console.log('Using journey from favourites:', journey);
-    // Navigate to home screen where the stations will be displayed
+    // Navigate to journey screen
     router.push('/journey');
   };
 

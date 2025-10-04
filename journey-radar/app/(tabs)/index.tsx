@@ -1,10 +1,9 @@
 import { Alert, View, StyleSheet, ScrollView, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StationInput } from '@/components/station-input';
-import { Station } from '@/types/station';
 import { useRoute } from '@/contexts/RouteContext';
 import { useJourney } from '@/contexts/JourneyContext';
-import { Journey } from '@/types/journey';
+import { Journey, Station } from '@/types/journey';
 import { JourneysList } from '@/components/journeys-list';
 import { useRouter } from "expo-router";
 import { Colors } from '@/constants/theme';
@@ -62,30 +61,9 @@ export default function HomeScreen() {
       return;
     }
 
-    // Create station objects from the journey data (convert from journey Station to app Station)
-    const sourceStation: Station = {
-      id: firstStation.id,
-      name: firstStation.name,
-      coordinates: {
-        latitude: firstStation.position?.latitude || 52.2297,
-        longitude: firstStation.position?.longitude || 21.0122
-      },
-      type: firstRoute.communicationMethod === 'train' ? 'train' : 'bus'
-    };
-
-    const destinationStation: Station = {
-      id: lastStation.id,
-      name: lastStation.name,
-      coordinates: {
-        latitude: lastStation.position?.latitude || 52.2319,
-        longitude: lastStation.position?.longitude || 21.0067
-      },
-      type: lastRoute.communicationMethod === 'train' ? 'train' : 'bus'
-    };
-
-    // Set the stations in the route context
-    setSourceStation(sourceStation);
-    setDestinationStation(destinationStation);
+    // Set the stations in the route context (now using journey Station type directly)
+    setSourceStation(firstStation);
+    setDestinationStation(lastStation);
 
     // Set as current journey
     setCurrentJourney(journey);

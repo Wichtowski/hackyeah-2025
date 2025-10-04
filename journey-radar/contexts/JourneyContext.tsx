@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Journey, Route, Station as JourneyStation, CommunicationMethod } from '@/types/journey';
-import { Station } from '@/types/station';
+import { Journey, Station as JourneyStation } from '@/types/journey';
 
 interface JourneyContextType {
   currentJourney: Journey | null;
@@ -9,7 +8,7 @@ interface JourneyContextType {
   addSavedJourney: (journey: Journey) => void;
   removeSavedJourney: (journeyId: string) => void;
   updateJourneyStatus: (journeyId: string, routeId: string) => void;
-  createJourneyFromStations: (source: Station, destination: Station) => Journey;
+  createJourneyFromStations: (source: JourneyStation, destination: JourneyStation) => Journey;
   getLastUsedJourneys: () => Journey[];
 }
 
@@ -239,7 +238,7 @@ export const JourneyProvider: React.FC<JourneyProviderProps> = ({ children }) =>
     );
   };
 
-  const createJourneyFromStations = (source: Station, destination: Station): Journey => {
+  const createJourneyFromStations = (source: JourneyStation, destination: JourneyStation): Journey => {
     const journeyId = `journey_${Date.now()}`;
     const routeId = `route_${Date.now()}`;
 
@@ -255,21 +254,15 @@ export const JourneyProvider: React.FC<JourneyProviderProps> = ({ children }) =>
             {
               id: source.id,
               name: source.name,
-              position: {
-                latitude: source.coordinates.latitude,
-                longitude: source.coordinates.longitude
-              }
+              position: source.position
             },
             {
               id: `dest_${Date.now()}`,
               name: destination.name,
-              position: {
-                latitude: destination.coordinates.latitude,
-                longitude: destination.coordinates.longitude
-              }
+              position: destination.position
             }
           ],
-          communicationMethod: source.type === 'train' ? 'train' : 'bus',
+          communicationMethod: 'bus',
           duration: 900,
           delay: { time: 0 },
           incidents: []

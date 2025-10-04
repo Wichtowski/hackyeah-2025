@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Station } from '@/types/station';
+import { Station } from '@/types/journey';
 
 interface RouteContextType {
   sourceStation: Station | null;
