@@ -1,15 +1,17 @@
 {
   "name": "journey-radar-backend",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Backend service for Journey Radar using Hexagonal Architecture.",
+  "main": "dist/application/index.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
+    "start": "node dist/application/index.js",
+    "build": "tsc && tsc-alias",
+    "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/application/index.ts",
     "test": "jest",
-    "dev": "ts-node-dev --respawn src/index.ts",
-    "build": "tsc"
+    "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +30,8 @@
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.4",
     "ts-node-dev": "^2.0.0",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"
   }
 }

@@ -13,4 +13,6 @@ export interface StationInputProps {
   onDestinationChange: (station: Station | null) => void;
   sourceStation: Station | null;
   destinationStation: Station | null;
+  absolutePosition?: boolean;
+  enableChevron?: boolean;
 }

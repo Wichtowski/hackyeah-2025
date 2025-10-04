@@ -149,13 +149,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.background,
     borderTopLeftRadius: 16,
     borderBottomLeftRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: -2,
-      height: 0,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
+    boxShadow: '-2px 0px 8px rgba(0, 0, 0, 0.25)',
     elevation: 8,
   },
   header: {
