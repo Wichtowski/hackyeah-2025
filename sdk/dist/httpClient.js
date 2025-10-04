@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -7,6 +16,12 @@ exports.enableApiDebug = enableApiDebug;
 exports.configureApi = configureApi;
 exports.getClient = getClient;
 exports.isDebugEnabled = isDebugEnabled;
+exports.apiGet = apiGet;
+exports.apiPost = apiPost;
+exports.apiPut = apiPut;
+exports.apiPatch = apiPatch;
+exports.apiDelete = apiDelete;
+exports.normalizeApiError = normalizeApiError;
 const axios_1 = __importDefault(require("axios"));
 /** Internal mutable state for the SDK HTTP layer */
 let API_BASE_URL = 'http://localhost:3000/api';
@@ -69,4 +84,51 @@ function getClient() {
 }
 function isDebugEnabled() {
     return debugEnabled;
+}
+function toApiError(error) {
+    var _a, _b, _c, _d;
+    if (error === null || error === void 0 ? void 0 : error.isAxiosError) {
+        return {
+            status: (_a = error.response) === null || _a === void 0 ? void 0 : _a.status,
+            message: ((_c = (_b = error.response) === null || _b === void 0 ? void 0 : _b.data) === null || _c === void 0 ? void 0 : _c.message) || error.message || 'Request failed',
+            details: (_d = error.response) === null || _d === void 0 ? void 0 : _d.data,
+            raw: error,
+        };
+    }
+    return { message: (error === null || error === void 0 ? void 0 : error.message) || 'Unknown error', raw: error };
+}
+function unwrap(promise) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const res = yield promise;
+            return res.data;
+        }
+        catch (err) {
+            throw toApiError(err);
+        }
+    });
+}
+/** Perform a typed GET request returning body as T */
+function apiGet(url, config) {
+    return unwrap(getClient().get(url, config));
+}
+/** Perform a typed POST request returning body as R (response) with data payload D */
+function apiPost(url, data, config) {
+    return unwrap(getClient().post(url, data, config));
+}
+/** Perform a typed PUT request */
+function apiPut(url, data, config) {
+    return unwrap(getClient().put(url, data, config));
+}
+/** Perform a typed PATCH request */
+function apiPatch(url, data, config) {
+    return unwrap(getClient().patch(url, data, config));
+}
+/** Perform a typed DELETE request */
+function apiDelete(url, config) {
+    return unwrap(getClient().delete(url, config));
+}
+/** Expose a helper for direct error normalization if consumers catch raw errors */
+function normalizeApiError(error) {
+    return toApiError(error);
 }

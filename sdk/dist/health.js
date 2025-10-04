@@ -14,11 +14,8 @@ const httpClient_1 = require("./httpClient");
 /** Perform a simple backend health check */
 function healthCheck() {
     return __awaiter(this, void 0, void 0, function* () {
-        const client = (0, httpClient_1.getClient)();
         try {
-            const response = yield client.get('/health');
-            // Return response body directly; header timestamp removed.
-            return response.data;
+            return yield (0, httpClient_1.apiGet)('/health');
         }
         catch (error) {
             // eslint-disable-next-line no-console

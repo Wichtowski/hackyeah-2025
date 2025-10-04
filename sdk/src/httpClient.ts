@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosRequestConfig } from 'axios';
 
 /** Internal mutable state for the SDK HTTP layer */
 let API_BASE_URL = 'http://localhost:3000/api';
@@ -70,3 +70,63 @@ export function isDebugEnabled() {
   return debugEnabled;
 }
 
+// -------------------- Typed Helper Layer --------------------
+
+/** Standardized error shape surfaced by helper methods */
+export interface ApiError {
+  status?: number;
+  message: string;
+  details?: unknown;
+  raw?: unknown; // original error for advanced inspection
+}
+
+function toApiError(error: any): ApiError {
+  if (error?.isAxiosError) {
+    return {
+      status: error.response?.status,
+      message: error.response?.data?.message || error.message || 'Request failed',
+      details: error.response?.data,
+      raw: error,
+    };
+  }
+  return { message: error?.message || 'Unknown error', raw: error };
+}
+
+async function unwrap<T>(promise: Promise<AxiosResponse<T>>): Promise<T> {
+  try {
+    const res = await promise;
+    return res.data;
+  } catch (err) {
+    throw toApiError(err);
+  }
+}
+
+/** Perform a typed GET request returning body as T */
+export function apiGet<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  return unwrap<T>(getClient().get<T>(url, config));
+}
+
+/** Perform a typed POST request returning body as R (response) with data payload D */
+export function apiPost<R = unknown, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<R> {
+  return unwrap<R>(getClient().post<R>(url, data, config));
+}
+
+/** Perform a typed PUT request */
+export function apiPut<R = unknown, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<R> {
+  return unwrap<R>(getClient().put<R>(url, data, config));
+}
+
+/** Perform a typed PATCH request */
+export function apiPatch<R = unknown, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<R> {
+  return unwrap<R>(getClient().patch<R>(url, data, config));
+}
+
+/** Perform a typed DELETE request */
+export function apiDelete<R = unknown>(url: string, config?: AxiosRequestConfig): Promise<R> {
+  return unwrap<R>(getClient().delete<R>(url, config));
+}
+
+/** Expose a helper for direct error normalization if consumers catch raw errors */
+export function normalizeApiError(error: unknown): ApiError {
+  return toApiError(error);
+}
