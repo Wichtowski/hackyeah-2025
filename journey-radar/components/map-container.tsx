@@ -8,8 +8,8 @@ import { MapContainer as Map, Marker, Popup, TileLayer } from 'react-leaflet';
 export const MapContainer = () => {
     return (
         <Map
-            center={[50.05936, 19.93435]} // Krakow, Poland
-            zoom={15}
+            center={[50.06787821610225, 19.991617943377845]} // Krakow Tauron Arena ;3
+            zoom={16}
             scrollWheelZoom={false}
             style={{ height: '1000px', width: '100%' }}
         >
@@ -18,7 +18,7 @@ export const MapContainer = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 errorTileUrl="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=="
             />
-            <Marker position={[51.505, -0.09]}>
+            <Marker position={[50.06787821610225, 19.991617943377845]}>
                 <Popup>
                     An approach to solve using osm in expo web platform.
                 </Popup>
