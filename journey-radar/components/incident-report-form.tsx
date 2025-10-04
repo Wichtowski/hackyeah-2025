@@ -1,18 +1,26 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import { Colors } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 import SlideTab from './slide-tab';
+import { SEVERITY_OPTIONS } from '../types/incident-severity';
 
 const IncidentReportForm: React.FC = () => {
   const [visible, setVisible] = useState(false);
+  const [selectedSeverity, setSelectedSeverity] = useState(SEVERITY_OPTIONS[0].value);
   const [details, setDetails] = useState('');
 
   const open = useCallback(() => setVisible(true), []);
   const close = useCallback(() => setVisible(false), []);
 
+  const handleSelectSeverity = (severity: string) => {
+    setSelectedSeverity(severity);
+  };
+
   const handleSubmit = () => {
     // TODO: integrate submission logic
     setDetails('');
+    setSelectedSeverity(SEVERITY_OPTIONS[0].value);
     setVisible(false);
   };
 
@@ -38,6 +46,32 @@ const IncidentReportForm: React.FC = () => {
           <View style={styles.section}>
             <Text style={styles.label}>Na trasie:</Text>
             <Text style={styles.journeyText}>Kraków Gł. → Wieliczka</Text>
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.labelWithIcon}>
+              <Text style={styles.label}>Poziom incydentu</Text>
+              <TouchableOpacity style={styles.helpIcon} activeOpacity={0.7}>
+                <Ionicons name="help-circle-outline" size={18} color={Colors.light.icon} />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.severityContainer}>
+              {SEVERITY_OPTIONS.map(option => {
+                const selected = option.value === selectedSeverity;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[styles.severityItem, selected && styles.severityItemSelected]}
+                    onPress={() => handleSelectSeverity(option.value)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.severityText, selected && styles.severityTextSelected]}>
+                      {option.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           <View style={styles.section}>
@@ -101,31 +135,44 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  labelWithIcon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  helpIcon: {
+    marginLeft: 6,
+    padding: 2,
+  },
   journeyText: {
     fontSize: 15,
     color: Colors.light.text,
   },
-  stepsContainer: {
+  severityContainer: {
+    flexDirection: 'row',
     borderWidth: 1,
     borderColor: Colors.light.icon + '25',
     borderRadius: 12,
     overflow: 'hidden',
   },
-  stepItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+  severityItem: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.light.icon + '15',
+    borderRightWidth: 1,
+    borderRightColor: Colors.light.icon + '15',
+    alignItems: 'center',
   },
-  stepItemSelected: {
+  severityItemSelected: {
     backgroundColor: Colors.light.icon + '15',
   },
-  stepText: {
-    fontSize: 14,
+  severityText: {
+    fontSize: 13,
     color: Colors.light.text,
+    textAlign: 'center',
   },
-  stepTextSelected: {
+  severityTextSelected: {
     fontWeight: '600',
   },
   textArea: {
