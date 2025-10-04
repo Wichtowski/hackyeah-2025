@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { Journey } from '@/types/journey';
 import { JourneyCard } from '@/components/journey-card';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 interface JourneysListProps {
   journeys: Journey[];
@@ -15,6 +16,8 @@ interface JourneysListProps {
   onDeleteJourney?: (journeyId: string) => void;
   showActions?: boolean;
   maxItems?: number;
+  colorsOverride?: typeof Colors.light;
+  compact?: boolean;
 }
 
 export const JourneysList: React.FC<JourneysListProps> = ({
@@ -27,30 +30,27 @@ export const JourneysList: React.FC<JourneysListProps> = ({
   onDeleteJourney,
   showActions = true,
   maxItems,
+  colorsOverride,
+  compact = false,
 }) => {
+  const scheme = useColorScheme();
+  const themeColors = colorsOverride || Colors[scheme ?? 'light'];
   // Limit journeys if maxItems is specified
   const displayedJourneys = maxItems ? journeys.slice(0, maxItems) : journeys;
 
   return (
-    <View style={styles.wrapper}>
-      {/* Fixed title header outside of ScrollView */}
-      <View style={styles.titleContainer}>
-        <Ionicons name={icon as any} size={24} color={Colors.light.blue} />
-        <Text style={styles.title}>{title}</Text>
+    <View style={[styles.wrapper]}>
+      <View style={[styles.titleContainer, { borderBottomColor: themeColors.blue + '22' }]}>
+        <Ionicons name={icon as any} size={20} color={themeColors.blue} />
+        <Text style={[styles.title, { color: themeColors.text }]}>{title}</Text>
       </View>
 
-      {/* Scrollable content */}
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={true}
-        bounces={true}
-      >
+      <View style={[styles.contentContainer]}>
         {displayedJourneys.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name={`${icon}-outline` as any} size={48} color={Colors.light.icon} />
-            <Text style={styles.emptyStateTitle}>{emptyStateTitle}</Text>
-            <Text style={styles.emptyStateText}>{emptyStateText}</Text>
+            <Ionicons name={`${icon}-outline` as any} size={40} color={themeColors.icon} />
+            <Text style={[styles.emptyStateTitle, { color: themeColors.text }]}>{emptyStateTitle}</Text>
+            <Text style={[styles.emptyStateText, { color: themeColors.icon }]}>{emptyStateText}</Text>
           </View>
         ) : (
           <View style={styles.journeysList}>
@@ -61,12 +61,13 @@ export const JourneysList: React.FC<JourneysListProps> = ({
                 onUseJourney={onUseJourney}
                 onDeleteJourney={onDeleteJourney}
                 showActions={showActions}
-                compact={false}
+                compact={compact}
+                colorsOverride={themeColors}
               />
             ))}
           </View>
         )}
-      </ScrollView>
+      </View>
     </View>
   );
 };
@@ -78,25 +79,18 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    backgroundColor: Colors.light.background,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    paddingHorizontal: 4,
+    paddingVertical: 8,
+    marginBottom: 12,
   },
   title: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '700',
-    color: Colors.light.text,
-    marginLeft: 12,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.background,
+    marginLeft: 8,
   },
   contentContainer: {
-    padding: 20,
     flexGrow: 1,
+    gap: 16,
   },
   journeysList: {
     gap: 16,
@@ -104,18 +98,16 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: 40,
   },
   emptyStateTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    color: Colors.light.text,
-    marginTop: 16,
-    marginBottom: 8,
+    marginTop: 12,
+    marginBottom: 6,
   },
   emptyStateText: {
     fontSize: 14,
-    color: Colors.light.icon,
     textAlign: 'center',
     lineHeight: 20,
     maxWidth: 280,

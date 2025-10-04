@@ -65,18 +65,16 @@ export default function FavouritesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View style={styles.headerTitle}>
-              <Text style={[styles.mainTitle, { color: colors.text }]}>
-                Journey Radar
-              </Text>
+              <Text style={[styles.mainTitle, { color: colors.text }]}>                Journey Radar              </Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.journeysContainer}>
+        <View style={styles.journeysWrapper}>
           <JourneysList
             journeys={savedJourneys}
             title="Ulubione Podróże"
@@ -86,6 +84,7 @@ export default function FavouritesScreen() {
             onUseJourney={handleUseJourney}
             onDeleteJourney={handleDeleteJourney}
             showActions={true}
+            colorsOverride={colors}
           />
         </View>
       </ScrollView>
@@ -94,40 +93,12 @@ export default function FavouritesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    padding: 20,
-    paddingTop: 10,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    flex: 1,
-  },
-  communityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  communityText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 8,
-    letterSpacing: 0.5,
-  },
-  mainTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    lineHeight: 32,
-  },
-  journeysContainer: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 20, paddingBottom: 40, gap: 12 },
+  header: { paddingTop: 10 },
+  headerTop: { flexDirection: 'row', alignItems: 'flex-start' },
+  headerTitle: { flex: 1, marginLeft: 16 },
+  mainTitle: { fontSize: 24, fontWeight: 'bold', lineHeight: 32 },
+  journeysWrapper: { flex: 1, paddingTop: 4 },
 });

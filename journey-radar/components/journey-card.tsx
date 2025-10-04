@@ -10,6 +10,7 @@ interface JourneyCardProps {
   onDeleteJourney?: (journeyId: string) => void;
   showActions?: boolean;
   compact?: boolean;
+  colorsOverride?: typeof Colors.light;
 }
 
 const getCommunicationMethodIcon = (method: CommunicationMethod): "bus" | "train" | "car-sport" | "walk" => {
@@ -38,14 +39,14 @@ const getOverallStatus = (journey: Journey): 'on-time' | 'delay' | 'problem' => 
   return 'on-time';
 };
 
-const getStatusColor = (status: 'on-time' | 'delay' | 'problem') => {
+const getStatusColor = (status: 'on-time' | 'delay' | 'problem', themeColors: typeof Colors.light) => {
   switch (status) {
     case 'delay':
-      return Colors.light.yellow;
+      return themeColors.yellow;
     case 'problem':
-      return Colors.light.pink;
+      return themeColors.pink;
     default:
-      return Colors.light.green;
+      return themeColors.green;
   }
 };
 
@@ -60,18 +61,19 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
   onDeleteJourney,
   showActions = true,
   compact = false,
+  colorsOverride,
 }) => {
+  const themeColors = colorsOverride || Colors.light;
+
   // Safety check for journey structure
   if (!journey || !journey.routes || journey.routes.length === 0) {
     console.warn('JourneyCard: Invalid journey data', journey);
     return null;
   }
 
-  // Get the first and last stations from all routes
   const firstRoute = journey.routes[0];
   const lastRoute = journey.routes[journey.routes.length - 1];
 
-  // Safety checks for routes
   if (!firstRoute || !firstRoute.stations || firstRoute.stations.length === 0) {
     console.warn('JourneyCard: First route has no stations', firstRoute);
     return null;
@@ -85,23 +87,18 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
   const firstStation = firstRoute.stations[0];
   const lastStation = lastRoute.stations[lastRoute.stations.length - 1];
 
-  // Safety checks for stations
   if (!firstStation || !lastStation) {
     console.warn('JourneyCard: Missing station data', { firstStation, lastStation });
     return null;
   }
 
-  // Determine overall status
   const overallStatus = getOverallStatus(journey);
 
   return (
-    <View style={[styles.journeyCard, compact && styles.compactCard]}>
+    <View style={[styles.journeyCard, compact && styles.compactCard, { backgroundColor: themeColors.background, borderColor: themeColors.blue + '22' }]}>
       <View style={styles.journeyHeader}>
-        <Text style={[styles.journeyTitle, compact && styles.compactTitle]}>
-          {journey.title || `${firstStation.name} do ${lastStation.name}`}
-        </Text>
         <View style={styles.statusIndicator}>
-          <View style={[styles.statusDot, { backgroundColor: getStatusColor(overallStatus) }]} />
+          <View style={[styles.statusDot, { backgroundColor: getStatusColor(overallStatus, themeColors) }]} />
         </View>
       </View>
 
@@ -111,17 +108,17 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
             <Ionicons
               name={getCommunicationMethodIcon(firstRoute.communicationMethod)}
               size={compact ? 14 : 16}
-              color={Colors.light.blue}
+              color={themeColors.blue}
             />
-            <Text style={[styles.stationName, compact && styles.compactStationName]}>
+            <Text style={[styles.stationName, compact && styles.compactStationName, { color: themeColors.text }]}>
               {firstStation.name}
             </Text>
           </View>
-          <Text style={[styles.stationLabel, compact && styles.compactLabel]}>Od</Text>
+          <Text style={[styles.stationLabel, compact && styles.compactLabel, { color: themeColors.icon }]}>Od</Text>
         </View>
 
         <View style={styles.arrowContainer}>
-          <Ionicons name="arrow-forward" size={compact ? 16 : 20} color={Colors.light.icon} />
+          <Ionicons name="arrow-forward" size={compact ? 16 : 20} color={themeColors.icon} />
         </View>
 
         <View style={styles.stationContainer}>
@@ -129,43 +126,41 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
             <Ionicons
               name={getCommunicationMethodIcon(lastRoute.communicationMethod)}
               size={compact ? 14 : 16}
-              color={Colors.light.blue}
+              color={themeColors.blue}
             />
-            <Text style={[styles.stationName, compact && styles.compactStationName]}>
+            <Text style={[styles.stationName, compact && styles.compactStationName, { color: themeColors.text }]}>
               {lastStation.name}
             </Text>
           </View>
-          <Text style={[styles.stationLabel, compact && styles.compactLabel]}>Do</Text>
+          <Text style={[styles.stationLabel, compact && styles.compactLabel, { color: themeColors.icon }]}>Do</Text>
         </View>
       </View>
 
       <View style={styles.journeyMeta}>
         {journey.duration && (
-          <Text style={styles.durationText}>
-            Czas trwania: {formatDuration(journey.duration)}
-          </Text>
+          <Text style={[styles.durationText, { color: themeColors.icon }]}>Czas trwania: {formatDuration(journey.duration)}</Text>
         )}
         {overallStatus === 'delay' && (
-          <Text style={[styles.delayText, { color: Colors.light.yellow }]}>
+          <Text style={{ fontSize: 12, color: themeColors.yellow, fontWeight: '500' }}>
             Zgłoszono opóźnienia
           </Text>
         )}
         {overallStatus === 'problem' && (
-          <Text style={[styles.problemText, { color: Colors.light.pink }]}>
+          <Text style={{ fontSize: 12, color: themeColors.pink, fontWeight: '500' }}>
             Zgłoszono problemy
           </Text>
         )}
       </View>
 
       {showActions && (
-        <View style={[styles.actionButtons, compact && styles.compactActions]}>
+        <View style={[styles.actionButtons, compact && styles.compactActions, { borderTopColor: themeColors.blue + '22' }]}>
           {onUseJourney && (
             <TouchableOpacity
               onPress={() => onUseJourney(journey)}
-              style={[styles.useButton, compact && styles.compactUseButton]}
+              style={[styles.useButton, compact && styles.compactUseButton, { backgroundColor: themeColors.blue }]}
             >
-              <Ionicons name="play" size={compact ? 14 : 16} color="#fff" />
-              <Text style={[styles.useButtonText, compact && styles.compactButtonText]}>
+              <Ionicons name="play" size={compact ? 14 : 16} color={themeColors.background} />
+              <Text style={[styles.useButtonText, compact && styles.compactButtonText, { color: themeColors.background }]}>
                 Użyj Podróży
               </Text>
             </TouchableOpacity>
@@ -174,9 +169,9 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
           {onDeleteJourney && (
             <TouchableOpacity
               onPress={() => onDeleteJourney(journey.id)}
-              style={[styles.deleteButton, compact && styles.compactDeleteButton]}
+              style={[styles.deleteButton, compact && styles.compactDeleteButton, { backgroundColor: themeColors.blue + '11' }]}
             >
-              <Ionicons name="trash-outline" size={compact ? 14 : 16} color={Colors.light.icon} />
+              <Ionicons name="trash-outline" size={compact ? 14 : 16} color={themeColors.icon} />
             </TouchableOpacity>
           )}
         </View>
@@ -187,35 +182,24 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
 
 const styles = StyleSheet.create({
   journeyCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
     borderWidth: 1,
-    borderColor: '#f0f0f0',
   },
   compactCard: {
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   journeyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
-  },
-  journeyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.light.text,
-    flex: 1,
-  },
-  compactTitle: {
-    fontSize: 14,
   },
   statusIndicator: {
     marginLeft: 8,
@@ -241,7 +225,6 @@ const styles = StyleSheet.create({
   stationName: {
     fontSize: 14,
     fontWeight: '500',
-    color: Colors.light.text,
     marginLeft: 8,
     flex: 1,
   },
@@ -251,7 +234,6 @@ const styles = StyleSheet.create({
   },
   stationLabel: {
     fontSize: 12,
-    color: Colors.light.icon,
     textTransform: 'uppercase',
     fontWeight: '500',
   },
@@ -267,12 +249,7 @@ const styles = StyleSheet.create({
   },
   durationText: {
     fontSize: 12,
-    color: Colors.light.icon,
     marginBottom: 2,
-  },
-  lastUpdatedText: {
-    fontSize: 12,
-    color: Colors.light.icon,
   },
   actionButtons: {
     flexDirection: 'row',
@@ -280,7 +257,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
   },
   compactActions: {
     paddingTop: 8,
@@ -289,10 +265,9 @@ const styles = StyleSheet.create({
   useButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light.blue,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
     flex: 1,
     marginRight: 12,
     justifyContent: 'center',
@@ -303,9 +278,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   useButtonText: {
-    color: '#fff',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     marginLeft: 6,
   },
   compactButtonText: {
@@ -313,9 +287,8 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   deleteButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#f8f8f8',
+    padding: 10,
+    borderRadius: 10,
   },
   compactDeleteButton: {
     padding: 6,
