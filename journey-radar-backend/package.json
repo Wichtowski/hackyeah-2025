@@ -8,8 +8,8 @@
   },
   "scripts": {
     "start": "node dist/application/index.js",
-    "build": "tsc",
-    "dev": "ts-node-dev src/application/index.ts",
+    "build": "tsc && tsc-alias",
+    "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/application/index.ts",
     "test": "jest",
     "test:watch": "jest --watch"
   },
@@ -30,6 +30,8 @@
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.4",
     "ts-node-dev": "^2.0.0",
+    "tsc-alias": "^1.8.16",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"
   }
 }
