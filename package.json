@@ -11,6 +11,9 @@
     "build:sdk": "npm --workspace @journey-radar/sdk run build",
     "postinstall": "npm run build:sdk",
     "test:backend": "npm --workspace journey-radar-backend run test",
+    "test:sdk": "npm --workspace @journey-radar/sdk run test",
+    "test:frontend": "echo 'No frontend tests defined'",
+    "test:all": "npm run test:backend && npm run test:sdk",
     "dev:backend": "npm --workspace journey-radar-backend run dev",
     "dev:frontend": "npm --workspace journey-radar run start"
   }
