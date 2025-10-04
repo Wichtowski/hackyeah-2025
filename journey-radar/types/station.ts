@@ -5,7 +5,7 @@ export interface Station {
     latitude: number;
     longitude: number;
   };
-  type: 'bus' | 'tram' | 'train';
+  type: 'bus' | 'tram' | 'train' | 'all';
 }
 
 export interface StationInputProps {
@@ -15,4 +15,5 @@ export interface StationInputProps {
   destinationStation: Station | null;
   absolutePosition?: boolean;
   enableChevron?: boolean;
+  onSearch?: (source: string, destination: string) => void;
 }
