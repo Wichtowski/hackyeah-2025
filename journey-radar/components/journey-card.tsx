@@ -1,9 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Colors } from '@/constants/theme';
-import { Journey, RouteStatus, CommunicationMethod } from '@/types/journey';
+import { Journey, CommunicationMethod } from '@/types/journey';
 
 interface JourneyCardProps {
   journey: Journey;
@@ -28,25 +27,31 @@ const getCommunicationMethodIcon = (method: CommunicationMethod): "bus" | "train
   }
 };
 
-const getStatusColor = (status: RouteStatus) => {
+const getOverallStatus = (journey: Journey): 'on-time' | 'delay' | 'problem' => {
+  for (const route of journey.routes) {
+    if (route.incidents.length > 0) {
+      const hasHighSeverity = route.incidents.some(incident => incident.severity === 'high');
+      if (hasHighSeverity) return 'problem';
+    }
+    if (route.delay.time > 0) return 'delay';
+  }
+  return 'on-time';
+};
+
+const getStatusColor = (status: 'on-time' | 'delay' | 'problem') => {
   switch (status) {
     case 'delay':
       return Colors.light.yellow;
     case 'problem':
       return Colors.light.pink;
-    case 'cancelled':
-      return '#ff4444';
     default:
       return Colors.light.green;
   }
 };
 
-const formatDate = (date: Date) => {
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
-  });
+const formatDuration = (seconds: number): string => {
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes} min`;
 };
 
 export const JourneyCard: React.FC<JourneyCardProps> = ({
@@ -56,23 +61,44 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
   showActions = true,
   compact = false,
 }) => {
-  // Get the first and last stations from the route segments
-  const firstSegment = journey.routes[0];
-  const lastSegment = journey.routes[journey.routes.length - 1];
+  // Safety check for journey structure
+  if (!journey || !journey.routes || journey.routes.length === 0) {
+    console.warn('JourneyCard: Invalid journey data', journey);
+    return null;
+  }
 
-  // Determine overall status (worst status in the journey)
-  const overallStatus = journey.routes.reduce((worst, segment) => {
-    if (segment.status === 'cancelled') return 'cancelled';
-    if (segment.status === 'problem' && worst !== 'cancelled') return 'problem';
-    if (segment.status === 'delay' && worst !== 'cancelled' && worst !== 'problem') return 'delay';
-    return worst;
-  }, 'on-time' as RouteStatus);
+  // Get the first and last stations from all routes
+  const firstRoute = journey.routes[0];
+  const lastRoute = journey.routes[journey.routes.length - 1];
+
+  // Safety checks for routes
+  if (!firstRoute || !firstRoute.stations || firstRoute.stations.length === 0) {
+    console.warn('JourneyCard: First route has no stations', firstRoute);
+    return null;
+  }
+
+  if (!lastRoute || !lastRoute.stations || lastRoute.stations.length === 0) {
+    console.warn('JourneyCard: Last route has no stations', lastRoute);
+    return null;
+  }
+
+  const firstStation = firstRoute.stations[0];
+  const lastStation = lastRoute.stations[lastRoute.stations.length - 1];
+
+  // Safety checks for stations
+  if (!firstStation || !lastStation) {
+    console.warn('JourneyCard: Missing station data', { firstStation, lastStation });
+    return null;
+  }
+
+  // Determine overall status
+  const overallStatus = getOverallStatus(journey);
 
   return (
     <View style={[styles.journeyCard, compact && styles.compactCard]}>
       <View style={styles.journeyHeader}>
         <Text style={[styles.journeyTitle, compact && styles.compactTitle]}>
-          {journey.title}
+          {journey.title || `${firstStation.name} do ${lastStation.name}`}
         </Text>
         <View style={styles.statusIndicator}>
           <View style={[styles.statusDot, { backgroundColor: getStatusColor(overallStatus) }]} />
@@ -83,15 +109,15 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
         <View style={styles.stationContainer}>
           <View style={styles.stationInfo}>
             <Ionicons
-              name={getCommunicationMethodIcon(firstSegment.communicationMethod)}
+              name={getCommunicationMethodIcon(firstRoute.communicationMethod)}
               size={compact ? 14 : 16}
               color={Colors.light.blue}
             />
             <Text style={[styles.stationName, compact && styles.compactStationName]}>
-              {firstSegment.from}
+              {firstStation.name}
             </Text>
           </View>
-          <Text style={[styles.stationLabel, compact && styles.compactLabel]}>From</Text>
+          <Text style={[styles.stationLabel, compact && styles.compactLabel]}>Od</Text>
         </View>
 
         <View style={styles.arrowContainer}>
@@ -101,27 +127,32 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
         <View style={styles.stationContainer}>
           <View style={styles.stationInfo}>
             <Ionicons
-              name={getCommunicationMethodIcon(lastSegment.communicationMethod)}
+              name={getCommunicationMethodIcon(lastRoute.communicationMethod)}
               size={compact ? 14 : 16}
               color={Colors.light.blue}
             />
             <Text style={[styles.stationName, compact && styles.compactStationName]}>
-              {lastSegment.to}
+              {lastStation.name}
             </Text>
           </View>
-          <Text style={[styles.stationLabel, compact && styles.compactLabel]}>To</Text>
+          <Text style={[styles.stationLabel, compact && styles.compactLabel]}>Do</Text>
         </View>
       </View>
 
       <View style={styles.journeyMeta}>
-        {journey.totalDuration && (
+        {journey.duration && (
           <Text style={styles.durationText}>
-            Duration: {journey.totalDuration}
+            Czas trwania: {formatDuration(journey.duration)}
           </Text>
         )}
-        {journey.lastUpdated && !compact && (
-          <Text style={styles.lastUpdatedText}>
-            Last updated: {formatDate(journey.lastUpdated)}
+        {overallStatus === 'delay' && (
+          <Text style={[styles.delayText, { color: Colors.light.yellow }]}>
+            Zgłoszono opóźnienia
+          </Text>
+        )}
+        {overallStatus === 'problem' && (
+          <Text style={[styles.problemText, { color: Colors.light.pink }]}>
+            Zgłoszono problemy
           </Text>
         )}
       </View>
@@ -135,7 +166,7 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
             >
               <Ionicons name="play" size={compact ? 14 : 16} color="#fff" />
               <Text style={[styles.useButtonText, compact && styles.compactButtonText]}>
-                Use Journey
+                Użyj Podróży
               </Text>
             </TouchableOpacity>
           )}

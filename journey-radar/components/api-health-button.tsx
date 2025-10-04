@@ -6,7 +6,7 @@ import { apiClient, configureApi, enableApiDebug } from '@journey-radar/sdk';
  * API Health Button
  * Placed near the TransportSelector (bottom-right). Uses EXPO_PUBLIC_API_URL if provided.
  */
-const ApiHealthButton: React.FC = () => {
+export const ApiHealthButton: React.FC = () => {
   // Enable debug logging if env flag set
   if (process.env.EXPO_PUBLIC_API_DEBUG === '1') {
     enableApiDebug(true);
@@ -31,7 +31,7 @@ const ApiHealthButton: React.FC = () => {
     // Auto-run a check shortly after mount for immediate feedback
     const t = setTimeout(() => handlePress(false), 300);
     return () => clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []);
 
   const handlePress = async (showAlerts = true) => {

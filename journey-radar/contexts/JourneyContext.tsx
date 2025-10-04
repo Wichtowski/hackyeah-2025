@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Journey, RouteSegment } from '@/types/journey';
+import { Journey, Route, Station as JourneyStation, CommunicationMethod } from '@/types/journey';
 import { Station } from '@/types/station';
 
 interface JourneyContextType {
@@ -8,7 +8,7 @@ interface JourneyContextType {
   setCurrentJourney: (journey: Journey | null) => void;
   addSavedJourney: (journey: Journey) => void;
   removeSavedJourney: (journeyId: string) => void;
-  updateJourneyStatus: (journeyId: string, routeSegmentId: string, status: string) => void;
+  updateJourneyStatus: (journeyId: string, routeId: string) => void;
   createJourneyFromStations: (source: Station, destination: Station) => Journey;
   getLastUsedJourneys: () => Journey[];
 }
@@ -27,55 +27,185 @@ interface JourneyProviderProps {
   children: ReactNode;
 }
 
-// Sample journeys data - converting from the old route format
+// Sample journeys data - based on the journey.tsx structure
 const mockJourneys: Journey[] = [
   {
     id: '1',
-    title: 'Central Station to Business District',
+    title: '',
+    distance: 250000,
+    duration: 14400,
     routes: [
       {
-        id: 'segment_1',
-        from: 'Central Station',
-        to: 'Business District',
+        id: '1',
+        communicationMethod: 'train',
+        duration: 7200,
+        stations: [
+          {
+            id: '1',
+            name: 'Kraków Łagiewniki',
+          },
+          {
+            id: '2',
+            name: 'Warszawa Centralna',
+          },
+          {
+            id: '3',
+            name: 'Warszawa Powiśle',
+          },
+          {
+            id: '4',
+            name: 'Warszawa Powion',
+          }
+        ],
+        delay: {
+          time: 100,
+          description: 'Małe opóźnienia zgłoszone'
+        },
+        incidents: [
+          {
+            id: '1',
+            stationId: '3',
+            position: { longitude: 21.0122, latitude: 52.2297 },
+            description: 'Awaria/problem zgłoszony',
+            severity: 'high',
+            type: 'cancelled'
+          }
+        ]
+      },
+      {
+        id: '2',
         communicationMethod: 'bus',
-        status: 'on-time',
-        eta: '09:15'
+        duration: 7200,
+        stations: [
+          {
+            id: '5',
+            name: 'Warszawa Powion',
+          },
+          {
+            id: '6',
+            name: 'Warszawa Stadion',
+          },
+          {
+            id: '7',
+            name: 'Praga Południe',
+          }
+        ],
+        delay: {
+          time: 300,
+          description: 'Małe opóźnienia zgłoszone'
+        },
+        incidents: []
       }
-    ],
-    totalDuration: '15 min',
-    lastUpdated: new Date('2024-10-04')
+    ]
   },
   {
     id: '2',
-    title: 'Old Town Square to University Campus',
+    title: '',
+    distance: 180000,
+    duration: 10800,
     routes: [
       {
-        id: 'segment_2',
-        from: 'Old Town Square',
-        to: 'University Campus',
-        communicationMethod: 'bus',
-        status: 'on-time',
-        eta: '10:30'
+        id: '3',
+        communicationMethod: 'tram',
+        duration: 3600,
+        stations: [
+          {
+            id: '8',
+            name: 'Wola Park',
+          },
+          {
+            id: '9',
+            name: 'Rondo Daszyńskiego',
+          },
+          {
+            id: '10',
+            name: 'Plac Bankowy',
+          }
+        ],
+        delay: {
+          time: 60,
+          description: 'Lekkie opóźnienie'
+        },
+        incidents: [
+          {
+            id: '2',
+            stationId: '9',
+            position: { longitude: 20.9843, latitude: 52.2319 },
+            description: 'Tymczasowe problemy z połączeniem',
+            severity: 'medium',
+            type: 'delay'
+          }
+        ]
+      },
+      {
+        id: '4',
+        communicationMethod: 'train',
+        duration: 7200,
+        stations: [
+          {
+            id: '11',
+            name: 'Plac Bankowy',
+          },
+          {
+            id: '12',
+            name: 'Warszawa Śródmieście',
+          },
+          {
+            id: '13',
+            name: 'Warszawa Centralna',
+          },
+          {
+            id: '14',
+            name: 'Dworzec Główny',
+          }
+        ],
+        delay: {
+          time: 0
+        },
+        incidents: []
       }
-    ],
-    totalDuration: '20 min',
-    lastUpdated: new Date('2024-10-02')
+    ]
   },
   {
     id: '3',
-    title: 'Residential Area to Shopping Mall',
+    title: '',
+    distance: 120000,
+    duration: 5400,
     routes: [
       {
-        id: 'segment_3',
-        from: 'Residential Area',
-        to: 'Shopping Mall',
+        id: '5',
         communicationMethod: 'bus',
-        status: 'on-time',
-        eta: '11:00'
+        duration: 5400,
+        stations: [
+          {
+            id: '15',
+            name: 'Centrum',
+          },
+          {
+            id: '16',
+            name: 'Wilanów',
+          },
+          {
+            id: '17',
+            name: 'Lotnisko Chopina',
+          }
+        ],
+        delay: {
+          time: 240,
+          description: 'Opóźnienia w ruchu'
+        },
+        incidents: [
+          {
+            id: '3',
+            stationId: '16',
+            position: { longitude: 21.0895, latitude: 52.1672 },
+            description: 'Korki na trasie',
+            severity: 'small',
+            type: 'delay'
+          }
+        ]
       }
-    ],
-    totalDuration: '25 min',
-    lastUpdated: new Date('2024-09-20')
+    ]
   }
 ];
 
@@ -91,18 +221,17 @@ export const JourneyProvider: React.FC<JourneyProviderProps> = ({ children }) =>
     setSavedJourneys(prev => prev.filter(journey => journey.id !== journeyId));
   };
 
-  const updateJourneyStatus = (journeyId: string, routeSegmentId: string, status: string) => {
+  const updateJourneyStatus = (journeyId: string, routeId: string) => {
     setSavedJourneys(prev =>
       prev.map(journey => {
         if (journey.id === journeyId) {
           return {
             ...journey,
-            routes: journey.routes.map(segment =>
-              segment.id === routeSegmentId
-                ? { ...segment, status: status as any }
-                : segment
-            ),
-            lastUpdated: new Date()
+            routes: journey.routes.map(route =>
+              route.id === routeId
+                ? { ...route, delay: { time: Date.now() % 300, description: 'Updated' } }
+                : route
+            )
           };
         }
         return journey;
@@ -112,33 +241,46 @@ export const JourneyProvider: React.FC<JourneyProviderProps> = ({ children }) =>
 
   const createJourneyFromStations = (source: Station, destination: Station): Journey => {
     const journeyId = `journey_${Date.now()}`;
-    const segmentId = `segment_${Date.now()}`;
+    const routeId = `route_${Date.now()}`;
 
     return {
       id: journeyId,
       title: `${source.name} to ${destination.name}`,
+      distance: 15000,
+      duration: 900,
       routes: [
         {
-          id: segmentId,
-          from: source.name,
-          to: destination.name,
+          id: routeId,
+          stations: [
+            {
+              id: source.id,
+              name: source.name,
+              position: {
+                latitude: source.coordinates.latitude,
+                longitude: source.coordinates.longitude
+              }
+            },
+            {
+              id: `dest_${Date.now()}`,
+              name: destination.name,
+              position: {
+                latitude: destination.coordinates.latitude,
+                longitude: destination.coordinates.longitude
+              }
+            }
+          ],
           communicationMethod: source.type === 'train' ? 'train' : 'bus',
-          status: 'on-time',
-          eta: new Date(Date.now() + 15 * 60 * 1000).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit'
-          })
+          duration: 900,
+          delay: { time: 0 },
+          incidents: []
         }
-      ],
-      totalDuration: '15 min',
-      lastUpdated: new Date()
+      ]
     };
   };
 
   const getLastUsedJourneys = (): Journey[] => {
-    return savedJourneys
-      .filter(journey => journey.lastUpdated)
-      .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime());
+    // Sort by ID as a proxy for last used (most recent IDs first)
+    return savedJourneys.sort((a, b) => b.id.localeCompare(a.id));
   };
 
   return (

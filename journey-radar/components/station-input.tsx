@@ -2,16 +2,12 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   TextInput,
-  Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { Station, StationInputProps } from '@/types/station';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const StationInput: React.FC<StationInputProps> = ({
   onSourceChange,
@@ -79,11 +75,6 @@ export const StationInput: React.FC<StationInputProps> = ({
   const clearSource = (): void => {
     setSourceText('');
     onSourceChange(null);
-  };
-
-  const clearDestination = (): void => {
-    setDestinationText('');
-    onDestinationChange(null);
   };
 
   const swapStations = (): void => {

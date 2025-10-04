@@ -1,4 +1,3 @@
-import { Colors } from '@/constants/theme';
 import React, { useState } from 'react';
 
 type CommuteType = '' | 'bus' | 'tram' | 'train';
@@ -19,7 +18,8 @@ const TRANSPORT_OPTIONS: TransportOption[] = [
 const TransportSelector: React.FC = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
-  const [isBouncing, setIsBouncing] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isBounding, setIsBouncing] = useState(false);
   const [selectedType, setSelectedType] = useState<CommuteType | null>(null);
 
   const handleMainButtonPress = (): void => {
