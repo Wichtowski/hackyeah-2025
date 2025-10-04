@@ -1,28 +1,56 @@
-export type RouteStatus = 'on-time' | 'delay' | 'problem' | 'cancelled';
+export type Longitude = number;
+export type Latitude = number;
+export type Distance = number;
+export type Duration = number;
+export type Time = number;
+
+export interface Position {
+  longitude: Longitude;
+  latitude: Latitude;
+}
+
+export interface Station {
+  id: string;
+  name: string;
+  position?: Position;
+}
+
+export interface Delay {
+  time: Time;
+  description?: string;
+}
+
+export interface Incident {
+  id: string;
+  stationId: string;
+  position: Position;
+  description: string;
+  severity: 'small' | 'medium' | 'high';
+  type: 'delay' | 'problem' | 'cancelled';
+}
 
 export type CommunicationMethod = 'bus' | 'train' | 'tram' | 'walk';
 
-export interface RouteSegment {
+export interface Route {
   id: string;
-  from: string;
-  to: string;
+  stations: Station[];
+  delay: Delay;
+  incidents: Incident[];
   communicationMethod: CommunicationMethod;
-  status: RouteStatus;
-  eta?: string;
-  delayMinutes?: number;
-  problemDescription?: string;
+  duration: Duration;
 }
 
 export interface Journey {
   id: string;
-  title: string;
-  routes: RouteSegment[];
-  totalDuration?: string;
-  lastUpdated: Date;
+  routes: Route[];
+  distance: Distance;
+  duration: Duration;
+  title?: string;
 }
 
-export interface StatusUpdate {
-  type: 'delay' | 'problem' | 'cancelled';
-  message: string;
-  severity: 'small' | 'medium' | 'high';
+export interface JourneyState {
+  journey_id: string;
+  route_index: number;
+  position: number;
+  updated_at: string;
 }
