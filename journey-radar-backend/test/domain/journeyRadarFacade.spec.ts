@@ -1,11 +1,14 @@
 import { JourneyRadarFacade } from '../../src/domain/facade/JourneyRadarFacade';
 import { JourneyRadarCapabilities } from '../../src/domain/facade/JourneyRadarCapabilities';
+import { InMemoryIncidentReportRepository } from '../../src/adapter/repository/InMemoryIncidentReportRepository';
 
 describe('JourneyRadarFacade (Domain Logic)', () => {
   let facade: JourneyRadarCapabilities;
+  let repository: InMemoryIncidentReportRepository;
 
   beforeEach(() => {
-    facade = new JourneyRadarFacade();
+    repository = new InMemoryIncidentReportRepository();
+    facade = new JourneyRadarFacade(repository);
   });
 
   it('should return a healthy status', async () => {

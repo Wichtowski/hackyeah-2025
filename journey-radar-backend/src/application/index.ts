@@ -1,8 +1,10 @@
 import express from 'express';
 import { JourneyRadarFacade } from '@domain/facade/JourneyRadarFacade';
 import { createHealthRoutes } from '@adapter/rest/incoming/healthRoutes';
+import { InMemoryIncidentReportRepository } from '@adapter/repository/InMemoryIncidentReportRepository';
 
-const journeyRadarFacade = new JourneyRadarFacade();
+const incidentReportRepository = new InMemoryIncidentReportRepository();
+const journeyRadarFacade = new JourneyRadarFacade(incidentReportRepository);
 const healthRouter = createHealthRoutes(journeyRadarFacade);
 
 const app = express();
