@@ -1,5 +1,5 @@
-import request from 'supertest';
 import app from '../src/index';
+import request = require('supertest');
 
 describe('GET /', () => {
   it('should return a 200 OK status and the correct message', async () => {
