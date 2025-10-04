@@ -1,4 +1,3 @@
-import IncidentReportForm from '@/components/incident-report-form';
 import {StationInput} from '@/components/station-input';
 import {Header} from '@/components/header';
 import ApiHealthButton from '@/components/api-health-button';
@@ -17,7 +16,6 @@ export default function HomeScreen() {
         destinationStation={destinationStation}
         absolutePosition={false}
       />
-      <IncidentReportForm/>
       {/* ApiHealthButton positioned to the left of TransportSelector */}
       <div
         style={{

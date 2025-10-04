@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
+// journey-radar/components/incident-report-form.tsx
+import React, { useState, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView,
-  Modal, Pressable, KeyboardAvoidingView, Platform
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Modal,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Colors } from '@/constants/theme';
 import { SEVERITY_OPTIONS } from '@/types/incident-severity';
 import { Ionicons } from '@expo/vector-icons';
-import {useColorScheme} from "@/hooks/use-color-scheme";
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 interface IncidentReportFormProps {
   visible?: boolean;
   onClose: () => void;
   onSubmit?: (payload: { severity: string; details: string }) => void;
 }
+
+const RADIUS_CONTROL = 12;
+const RADIUS_CARD = 16;
+const CARD_MAX_WIDTH = 420;
 
 const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
   visible = false,
@@ -24,7 +37,18 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
   const [selectedSeverity, setSelectedSeverity] = useState(SEVERITY_OPTIONS[1].value);
   const [details, setDetails] = useState('');
 
-  if (!visible) return null; // Prevent mounting the Modal when not needed
+  const severityColorMap: Record<string, string> = {
+    low: colors.blue,
+    medium: colors.yellow,
+    severe: colors.pink,
+  };
+
+  const selectedSeverityDescription = useMemo(
+    () => SEVERITY_OPTIONS.find(o => o.value === selectedSeverity)?.description,
+    [selectedSeverity]
+  );
+
+  if (!visible) return null;
 
   const handleSelectSeverity = (severity: string) => setSelectedSeverity(severity);
 
@@ -50,55 +74,87 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
       >
         <Pressable style={styles.backdrop} onPress={onClose} />
 
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>Zgłoszenie incydentu</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="close" size={22} color={Colors.light.icon} />
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: colors.background,
+              borderRadius: RADIUS_CARD,
+              borderColor: colors.blue + '20',
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.cardHeader,
+              { borderBottomColor: colors.blue + '25', paddingVertical: 16 },
+            ]}
+          >
+            <Text style={[styles.cardTitle, { color: colors.text }]}>
+              Zgłoszenie incydentu
+            </Text>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeButton}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="close" size={22} color={colors.text} />
             </TouchableOpacity>
           </View>
 
           <ScrollView
             style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[styles.scrollContent, { paddingBottom: 24 }]}
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.section}>
-              <Text style={styles.label}>Na odcinku</Text>
-              <Text style={[styles.severityItem, styles.severityContainer, styles.severityText]}>
-                Kraków Gł. → Wieliczka
-              </Text>
+              <Text style={[styles.label, { color: colors.text }]}>Na odcinku</Text>
+              <View
+                style={[
+                  styles.readonlyPill,
+                  {
+                    borderColor: colors.blue + '30',
+                    backgroundColor: colors.blue + '10',
+                    borderRadius: RADIUS_CONTROL,
+                  },
+                ]}
+              >
+                <Text style={[styles.readonlyPillText, { color: colors.text }]}>
+                  Kraków Gł. → Wieliczka
+                </Text>
+              </View>
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.label}>Poziom incydentu</Text>
-              <View style={styles.severityContainer}>
-                {SEVERITY_OPTIONS.map((option, index) => {
+              <Text style={[styles.label, { color: colors.text }]}>Poziom incydentu</Text>
+
+              <View
+                style={[
+                  styles.severityContainer,
+                  { borderColor: colors.text + '25', borderRadius: RADIUS_CONTROL },
+                ]}
+              >
+                {SEVERITY_OPTIONS.map(option => {
                   const selected = option.value === selectedSeverity;
-                  const isLast = index === SEVERITY_OPTIONS.length - 1;
-
-                  const getSeverityStyle = (value: string) => {
-                    switch (value) {
-                      case 'low': return styles.severityLow;
-                      case 'medium': return styles.severityMedium;
-                      case 'severe': return styles.severitySevere;
-                      default: return {};
-                    }
-                  };
-
+                  const baseColor = severityColorMap[option.value] || colors.text;
                   return (
                     <TouchableOpacity
                       key={option.value}
                       style={[
                         styles.severityItem,
-                        getSeverityStyle(option.value),
-                        selected && styles.severitySelected,
-                        isLast && { borderRightWidth: 0 },
+                        {
+                          backgroundColor: selected ? baseColor + '22' : 'transparent',
+                        },
+                        selected && {
+                          borderColor: baseColor,
+                          borderWidth: 2,
+                          borderRadius: RADIUS_CONTROL,
+                        },
                       ]}
                       onPress={() => handleSelectSeverity(option.value)}
-                      activeOpacity={0.7}
+                      activeOpacity={0.75}
                     >
-                      <Text style={[styles.severityText, getSeverityStyle(option.value)]}>
+                      <Text style={[styles.severityText, { color: baseColor }]}>
                         {option.label}
                       </Text>
                     </TouchableOpacity>
@@ -106,19 +162,36 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
                 })}
               </View>
 
-              <Text style={styles.severityDescription}>
-                {SEVERITY_OPTIONS.find(o => o.value === selectedSeverity)?.description}
-              </Text>
+              {selectedSeverityDescription && (
+                <Text
+                  style={[
+                    styles.severityDescription,
+                    { color: colors.text + '90' },
+                  ]}
+                >
+                  {selectedSeverityDescription}
+                </Text>
+              )}
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.label}>Szczegóły (opcjonalne)</Text>
+              <Text style={[styles.label, { color: colors.text }]}>
+                Szczegóły (opcjonalne)
+              </Text>
               <TextInput
-                style={styles.textArea}
+                style={[
+                  styles.textArea,
+                  {
+                    borderColor: colors.text + '25',
+                    color: colors.text,
+                    backgroundColor: colors.background,
+                    borderRadius: RADIUS_CONTROL,
+                  },
+                ]}
                 value={details}
                 onChangeText={setDetails}
                 placeholder="Dodaj dodatkowy opis..."
-                placeholderTextColor={Colors.light.icon}
+                placeholderTextColor={colors.text + '60'}
                 multiline
                 textAlignVertical="top"
               />
@@ -126,11 +199,32 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
 
             <View style={styles.actions}>
               <TouchableOpacity
-                style={[styles.submitButton, { backgroundColor: colors.pink }]}
+                style={[
+                  styles.cancelButton,
+                  {
+                    backgroundColor: colors.text + '12',
+                    borderRadius: RADIUS_CONTROL,
+                    borderColor: colors.text + '25',
+                  },
+                ]}
+                onPress={onClose}
+                activeOpacity={0.75}
+              >
+                <Text style={[styles.cancelText, { color: colors.text }]}>Anuluj</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  {
+                    backgroundColor: colors.pink,
+                    borderRadius: RADIUS_CONTROL,
+                  },
+                ]}
                 onPress={handleSubmit}
                 activeOpacity={0.85}
               >
-                <Text style={styles.submitText}>Wyślij</Text>
+                <Text style={[styles.submitText, { color: 'white' }]}>Wyślij</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -140,7 +234,6 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
   );
 };
 
-const CARD_MAX_WIDTH = 420;
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'center', padding: 24 },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
@@ -148,85 +241,78 @@ const styles = StyleSheet.create({
     maxWidth: CARD_MAX_WIDTH,
     width: '100%',
     alignSelf: 'center',
-    backgroundColor: Colors.light.background,
-    borderRadius: 24,
-    paddingBottom: 8,
+    borderWidth: 1,
     overflow: 'hidden',
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 22,
-    paddingVertical: 18,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.icon + '20',
   },
-  cardTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: Colors.light.text },
+  cardTitle: { flex: 1, fontSize: 18, fontWeight: '600' },
   closeButton: { padding: 4 },
   scroll: { maxHeight: 520 },
-  scrollContent: { paddingHorizontal: 22, paddingBottom: 28 },
-  section: { marginTop: 20 },
+  scrollContent: { paddingHorizontal: 20 },
+  section: { marginTop: 18 },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
-    color: Colors.light.text,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  readonlyPill: {
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+  },
+  readonlyPillText: { fontSize: 14, fontWeight: '500' },
   severityContainer: {
     flexDirection: 'row',
     borderWidth: 1,
-    borderColor: Colors.light.icon + '25',
-    borderRadius: 22,
     overflow: 'hidden',
   },
   severityItem: {
     flex: 1,
-    paddingVertical: 15,
-    paddingHorizontal: 8,
-    borderRightWidth: 1,
-    borderRightColor: Colors.light.icon + '15',
+    paddingVertical: 14,
+    paddingHorizontal: 6,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  severityText: { fontSize: 15, fontWeight: '600', textAlign: 'center' },
-  severityLow: { color: '#006400' },
-  severityMedium: { color: '#B8860B' },
-  severitySevere: { color: '#f44336' },
-  severitySelected: {
-    borderWidth: 2,
-    borderRightWidth: 2,
-    borderRightColor: Colors.light.icon,
-    borderRadius: 22,
+  severityText: { fontSize: 14, fontWeight: '600' },
+  severityDescription: {
+    fontSize: 12,
+    marginTop: 6,
+    lineHeight: 18,
+    fontStyle: 'italic',
   },
   textArea: {
     minHeight: 110,
     borderWidth: 1,
-    borderColor: Colors.light.icon + '25',
-    borderRadius: 22,
     padding: 12,
     fontSize: 14,
-    color: Colors.light.text,
-    backgroundColor: Colors.light.background,
   },
-  actions: { paddingTop: 24, flexDirection: 'row', justifyContent: 'center' },
-  submitButton: {
+  actions: {
     flexDirection: 'row',
+    gap: 12,
+    paddingTop: 28,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderWidth: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    margin: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 24,
-    borderRadius: 12,
   },
-  submitText: { color: 'white', fontSize: 16, fontWeight: '600', marginLeft: 8 },
-  severityDescription: {
-    fontSize: 13,
-    color: Colors.light.icon,
-    marginTop: 8,
-    lineHeight: 18,
-    fontStyle: 'italic',
+  cancelText: { fontSize: 15, fontWeight: '600' },
+  submitButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
   },
+  submitText: { fontSize: 15, fontWeight: '600' },
 });
 
 export default IncidentReportForm;
