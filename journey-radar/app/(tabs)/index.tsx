@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import TransportSelector from '@/components/transport-selector';
+import IncidentReportForm from '@/components/incident-report-form';
 import { StationInput } from '@/components/station-input';
 import { Header } from '@/components/header';
 import { Station } from '@/types/station';
@@ -29,7 +29,7 @@ export default function HomeScreen() {
         destinationStation={destinationStation}
         absolutePosition={false}
       />
-      <TransportSelector />
+      <IncidentReportForm />
       {/* ApiHealthButton positioned to the left of TransportSelector */}
       <div
         style={{

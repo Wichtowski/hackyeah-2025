@@ -1,9 +1,9 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import { Colors } from '@/constants/theme';
-import { Ionicons } from '@expo/vector-icons';
+import React, {useState, useCallback} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView} from 'react-native';
+import {Colors} from '@/constants/theme';
+import {Ionicons} from '@expo/vector-icons';
 import SlideTab from './slide-tab';
-import { SEVERITY_OPTIONS } from '../types/incident-severity';
+import {SEVERITY_OPTIONS} from '@/types/incident-severity';
 
 const IncidentReportForm: React.FC = () => {
   const [visible, setVisible] = useState(false);
@@ -52,16 +52,37 @@ const IncidentReportForm: React.FC = () => {
             <View style={styles.labelWithIcon}>
               <Text style={styles.label}>Poziom incydentu</Text>
               <TouchableOpacity style={styles.helpIcon} activeOpacity={0.7}>
-                <Ionicons name="help-circle-outline" size={18} color={Colors.light.icon} />
+                <Ionicons name="help-circle-outline" size={18} color={Colors.light.icon}/>
               </TouchableOpacity>
             </View>
+
             <View style={styles.severityContainer}>
-              {SEVERITY_OPTIONS.map(option => {
+              {SEVERITY_OPTIONS.map((option, index) => {
                 const selected = option.value === selectedSeverity;
+                const isLast = index === SEVERITY_OPTIONS.length - 1;
+
+                // Get severity-specific styles
+                const getSeverityStyle = (value: string, selected: boolean) => {
+                  switch (value) {
+                    case 'low':
+                      return selected ? styles.severityLowSelected : styles.severityLow;
+                    case 'medium':
+                      return selected ? styles.severityMediumSelected : styles.severityMedium;
+                    case 'severe':
+                      return selected ? styles.severitySevereSelected : styles.severitySevere;
+                    default:
+                      return {};
+                  }
+                };
+
                 return (
                   <TouchableOpacity
                     key={option.value}
-                    style={[styles.severityItem, selected && styles.severityItemSelected]}
+                    style={[
+                      styles.severityItem,
+                      getSeverityStyle(option.value, selected),
+                      isLast && {borderRightWidth: 0}
+                    ]}
                     onPress={() => handleSelectSeverity(option.value)}
                     activeOpacity={0.7}
                   >
@@ -142,7 +163,7 @@ const styles = StyleSheet.create({
   },
   helpIcon: {
     marginLeft: 6,
-    padding: 2,
+    top: -3,
   },
   journeyText: {
     fontSize: 15,
@@ -159,13 +180,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 8,
-    backgroundColor: Colors.light.background,
     borderRightWidth: 1,
     borderRightColor: Colors.light.icon + '15',
     alignItems: 'center',
-  },
-  severityItemSelected: {
-    backgroundColor: Colors.light.icon + '15',
   },
   severityText: {
     fontSize: 13,
@@ -174,6 +191,25 @@ const styles = StyleSheet.create({
   },
   severityTextSelected: {
     fontWeight: '600',
+    color: '#fff',
+  },
+  severityLow: {
+    backgroundColor: '#ffffe1',
+  },
+  severityLowSelected: {
+    backgroundColor: '#f1c232',
+  },
+  severityMedium: {
+    backgroundColor: '#fff8dd',
+  },
+  severityMediumSelected: {
+    backgroundColor: '#eb8c00',
+  },
+  severitySevere: {
+    backgroundColor: '#ffebee',
+  },
+  severitySevereSelected: {
+    backgroundColor: '#f44336',
   },
   textArea: {
     minHeight: 110,
