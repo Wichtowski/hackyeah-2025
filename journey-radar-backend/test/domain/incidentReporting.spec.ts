@@ -1,17 +1,20 @@
 import { JourneyRadarFacade } from '../../src/domain/facade/JourneyRadarFacade';
 import { InMemoryIncidentReportRepository } from '../../src/adapter/repository/InMemoryIncidentReportRepository';
+import { InMemoryUserLocationRepository } from '../../src/adapter/repository/InMemoryUserLocationRepository';
 import { IncidentType } from '../../src/domain/model/IncidentReport';
 import { MockUserContextService } from '../../src/adapter/service/MockUserContextService';
 
 describe('Incident Reporting', () => {
   let facade: JourneyRadarFacade;
   let repository: InMemoryIncidentReportRepository;
+  let userLocationRepository: InMemoryUserLocationRepository;
   let userContextService: MockUserContextService;
 
   beforeEach(() => {
     repository = new InMemoryIncidentReportRepository();
-    userContextService = new MockUserContextService();
-    facade = new JourneyRadarFacade(repository, userContextService);
+    userLocationRepository = new InMemoryUserLocationRepository();
+    userContextService = new MockUserContextService(userLocationRepository);
+    facade = new JourneyRadarFacade(repository, userContextService, userLocationRepository);
   });
 
   describe('reportIncident', () => {
