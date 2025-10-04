@@ -85,11 +85,6 @@ export const StationInput: React.FC<StationInputProps> = ({
     onSourceChange(null);
   };
 
-  const clearDestination = (): void => {
-    setDestinationText('');
-    onDestinationChange(null);
-  };
-
   const swapStations = (): void => {
     const tempSource = sourceText;
     const tempSourceStation = sourceStation;
@@ -155,8 +150,8 @@ export const StationInput: React.FC<StationInputProps> = ({
                   autoComplete='off'
                 />
                 {destinationText.length > 0 && (
-                <TouchableOpacity onPress={clearDestination} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={20} color={Colors.light.icon} />
+                <TouchableOpacity onPress={swapStations} style={styles.swapButton}>
+                  <Ionicons name="swap-vertical" size={20} color={Colors.light.icon} />
                 </TouchableOpacity>
                 )}
               </View>
