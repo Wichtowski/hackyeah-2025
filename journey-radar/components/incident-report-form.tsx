@@ -1,153 +1,171 @@
-import React, {useState, useCallback} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView} from 'react-native';
-import {Colors} from '@/constants/theme';
-import SlideTab from './slide-tab';
-import {SEVERITY_OPTIONS} from '@/types/incident-severity';
+import React, { useState } from 'react';
+import {
+  View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView,
+  Modal, Pressable, KeyboardAvoidingView, Platform
+} from 'react-native';
+import { Colors } from '@/constants/theme';
+import { SEVERITY_OPTIONS } from '@/types/incident-severity';
+import { Ionicons } from '@expo/vector-icons';
+import {useColorScheme} from "@/hooks/use-color-scheme";
 
-const IncidentReportForm: React.FC = () => {
-  const [visible, setVisible] = useState(false);
+interface IncidentReportFormProps {
+  visible?: boolean;
+  onClose: () => void;
+  onSubmit?: (payload: { severity: string; details: string }) => void;
+}
+
+const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
+  visible = false,
+  onClose,
+  onSubmit,
+}) => {
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
   const [selectedSeverity, setSelectedSeverity] = useState(SEVERITY_OPTIONS[1].value);
   const [details, setDetails] = useState('');
 
-  const open = useCallback(() => setVisible(true), []);
-  const close = useCallback(() => setVisible(false), []);
+  if (!visible) return null; // Prevent mounting the Modal when not needed
 
-  const handleSelectSeverity = (severity: string) => {
-    setSelectedSeverity(severity);
-  };
+  const handleSelectSeverity = (severity: string) => setSelectedSeverity(severity);
 
   const handleSubmit = () => {
-    // TODO: integrate submission logic
+    onSubmit?.({ severity: selectedSeverity, details });
     setDetails('');
     setSelectedSeverity(SEVERITY_OPTIONS[1].value);
-    setVisible(false);
+    onClose();
   };
 
   return (
-    <>
-      <View style={styles.fabContainer}>
-        <TouchableOpacity style={styles.triggerButton} onPress={open} activeOpacity={0.7}>
-          <Text style={styles.triggerText}>Zgłoś</Text>
-        </TouchableOpacity>
-      </View>
-
-      <SlideTab
-        visible={visible}
-        onClose={close}
-        title="Zgłoszenie incydentu"
-        width={360}
+    <Modal
+      visible
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+      presentationStyle="overFullScreen"
+    >
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.section}>
-            <Text style={styles.label}>Na odcinku</Text>
-            <Text style={[styles.severityItem, styles.severityContainer, styles.severityText]}>Kraków Gł. → Wieliczka</Text>
-          </View>
+        <Pressable style={styles.backdrop} onPress={onClose} />
 
-          <View style={styles.section}>
-            <View style={styles.labelWithIcon}>
-              <Text style={styles.label}>Poziom incydentu</Text>
-            </View>
-
-            <View style={styles.severityContainer}>
-              {SEVERITY_OPTIONS.map((option, index) => {
-                const selected = option.value === selectedSeverity;
-                const isLast = index === SEVERITY_OPTIONS.length - 1;
-
-                const getSeverityStyle = (value: string, selected: boolean) => {
-                  switch (value) {
-                    case 'low':
-                      return styles.severityLow;
-                    case 'medium':
-                      return styles.severityMedium;
-                    case 'severe':
-                      return styles.severitySevere;
-                    default:
-                      return {};
-                  }
-                };
-
-                return (
-                  <TouchableOpacity
-                    key={option.value}
-                    style={[
-                      styles.severityItem,
-                      getSeverityStyle(option.value, selected),
-                      selected && styles.severitySelected,
-                      isLast && {borderRightWidth: 0}
-                    ]}
-                    onPress={() => handleSelectSeverity(option.value)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.severityText, getSeverityStyle(option.value, selected)]}>
-                      {option.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <Text style={styles.severityDescription}>
-              {SEVERITY_OPTIONS.find(option => option.value === selectedSeverity)?.description}
-            </Text>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.label}>Szczegóły (opcjonalne)</Text>
-            <TextInput
-              style={styles.textArea}
-              value={details}
-              onChangeText={setDetails}
-              placeholder="Dodaj dodatkowy opis..."
-              placeholderTextColor={Colors.light.icon}
-              multiline
-              textAlignVertical="top"
-            />
-          </View>
-
-          <View style={styles.actions}>
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} activeOpacity={0.8}>
-              <Text style={styles.submitText}>Wyślij</Text>
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>Zgłoszenie incydentu</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close" size={22} color={Colors.light.icon} />
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </SlideTab>
-    </>
+
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.section}>
+              <Text style={styles.label}>Na odcinku</Text>
+              <Text style={[styles.severityItem, styles.severityContainer, styles.severityText]}>
+                Kraków Gł. → Wieliczka
+              </Text>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.label}>Poziom incydentu</Text>
+              <View style={styles.severityContainer}>
+                {SEVERITY_OPTIONS.map((option, index) => {
+                  const selected = option.value === selectedSeverity;
+                  const isLast = index === SEVERITY_OPTIONS.length - 1;
+
+                  const getSeverityStyle = (value: string) => {
+                    switch (value) {
+                      case 'low': return styles.severityLow;
+                      case 'medium': return styles.severityMedium;
+                      case 'severe': return styles.severitySevere;
+                      default: return {};
+                    }
+                  };
+
+                  return (
+                    <TouchableOpacity
+                      key={option.value}
+                      style={[
+                        styles.severityItem,
+                        getSeverityStyle(option.value),
+                        selected && styles.severitySelected,
+                        isLast && { borderRightWidth: 0 },
+                      ]}
+                      onPress={() => handleSelectSeverity(option.value)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.severityText, getSeverityStyle(option.value)]}>
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <Text style={styles.severityDescription}>
+                {SEVERITY_OPTIONS.find(o => o.value === selectedSeverity)?.description}
+              </Text>
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.label}>Szczegóły (opcjonalne)</Text>
+              <TextInput
+                style={styles.textArea}
+                value={details}
+                onChangeText={setDetails}
+                placeholder="Dodaj dodatkowy opis..."
+                placeholderTextColor={Colors.light.icon}
+                multiline
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={[styles.submitButton, { backgroundColor: colors.pink }]}
+                onPress={handleSubmit}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.submitText}>Wyślij</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 };
 
+const CARD_MAX_WIDTH = 420;
 const styles = StyleSheet.create({
-  fabContainer: {
-    position: 'absolute',
-    bottom: 100,
-    right: 20,
-    zIndex: 50,
-  },
-  triggerButton: {
+  overlay: { flex: 1, justifyContent: 'center', padding: 24 },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
+  card: {
+    maxWidth: CARD_MAX_WIDTH,
+    width: '100%',
+    alignSelf: 'center',
     backgroundColor: Colors.light.background,
-    borderRadius: 22,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: Colors.light.icon + '30',
+    borderRadius: 24,
+    paddingBottom: 8,
+    overflow: 'hidden',
   },
-  triggerText: {
-    fontSize: 16,
-    color: Colors.light.text,
-    fontWeight: '500',
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 22,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.icon + '20',
   },
-  scroll: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 32,
-  },
-  section: {
-    marginBottom: 20,
-  },
+  cardTitle: { flex: 1, fontSize: 18, fontWeight: '600', color: Colors.light.text },
+  closeButton: { padding: 4 },
+  scroll: { maxHeight: 520 },
+  scrollContent: { paddingHorizontal: 22, paddingBottom: 28 },
+  section: { marginTop: 20 },
   label: {
     fontSize: 13,
     fontWeight: '600',
@@ -155,11 +173,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-  },
-  labelWithIcon: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
   },
   severityContainer: {
     flexDirection: 'row',
@@ -176,20 +189,10 @@ const styles = StyleSheet.create({
     borderRightColor: Colors.light.icon + '15',
     alignItems: 'center',
   },
-  severityText: {
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  severityLow: {
-    color: '#006400',
-  },
-  severityMedium: {
-    color: '#B8860B',
-  },
-  severitySevere: {
-    color: '#f44336',
-  },
+  severityText: { fontSize: 15, fontWeight: '600', textAlign: 'center' },
+  severityLow: { color: '#006400' },
+  severityMedium: { color: '#B8860B' },
+  severitySevere: { color: '#f44336' },
   severitySelected: {
     borderWidth: 2,
     borderRightWidth: 2,
@@ -206,24 +209,17 @@ const styles = StyleSheet.create({
     color: Colors.light.text,
     backgroundColor: Colors.light.background,
   },
-  actions: {
-    paddingVertical: 12,
-    marginTop: 8,
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
+  actions: { paddingTop: 24, flexDirection: 'row', justifyContent: 'center' },
   submitButton: {
-    paddingVertical: 15,
-    backgroundColor: Colors.light.icon,
-    paddingHorizontal: 22,
-    borderRadius: 22,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 20,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
   },
-  submitText: {
-    color: Colors.light.background,
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+  submitText: { color: 'white', fontSize: 16, fontWeight: '600', marginLeft: 8 },
   severityDescription: {
     fontSize: 13,
     color: Colors.light.icon,
