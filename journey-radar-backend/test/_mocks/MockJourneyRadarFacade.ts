@@ -38,8 +38,16 @@ export class MockJourneyRadarFacade implements JourneyRadarCapabilities {
     return Promise.resolve(this.healthResponse);
   }
 
-  async reportIncident(incidentReport: IncidentReport): Promise<IncidentReport> {
-    this.recordCall('reportIncident', [incidentReport]);
-    return Promise.resolve(this.incidentResponse || incidentReport);
+  async reportIncident(userId: string, incidentType: string, description?: string): Promise<IncidentReport> {
+    this.recordCall('reportIncident', [userId, incidentType, description]);
+    return Promise.resolve(this.incidentResponse || {
+      id: 'mock_incident_1',
+      location: { longitude: 21.0122, latitude: 52.2297 },
+      reporter: { id: userId, type: 'USER' as any },
+      incidentType: incidentType as any,
+      details: { reportedOnRoute: null },
+      timestamp: new Date(),
+      description
+    });
   }
 }

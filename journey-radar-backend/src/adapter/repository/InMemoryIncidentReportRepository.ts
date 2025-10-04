@@ -5,8 +5,20 @@ export class InMemoryIncidentReportRepository implements IncidentReportRepositor
   private incidents: Map<string, IncidentReport> = new Map();
 
   async save(incidentReport: IncidentReport): Promise<IncidentReport> {
-    this.incidents.set(incidentReport.id, incidentReport);
-    return incidentReport;
+    // Generate ID if not provided (using timestamp-based ID)
+    const id = incidentReport.id || this.generateId();
+    const reportWithId = new IncidentReport(
+      id,
+      incidentReport.location,
+      incidentReport.reporter,
+      incidentReport.incidentType,
+      incidentReport.details,
+      incidentReport.timestamp,
+      incidentReport.description
+    );
+
+    this.incidents.set(reportWithId.id, reportWithId);
+    return reportWithId;
   }
 
   async findById(id: string): Promise<IncidentReport | null> {
@@ -57,5 +69,9 @@ export class InMemoryIncidentReportRepository implements IncidentReportRepositor
 
   private toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
+  }
+
+  private generateId(): string {
+    return `incident-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   }
 }

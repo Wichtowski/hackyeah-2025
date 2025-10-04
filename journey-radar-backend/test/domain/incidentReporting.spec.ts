@@ -1,189 +1,134 @@
 import { JourneyRadarFacade } from '../../src/domain/facade/JourneyRadarFacade';
 import { InMemoryIncidentReportRepository } from '../../src/adapter/repository/InMemoryIncidentReportRepository';
-import { IncidentReport, IncidentType, ReporterType } from '../../src/domain/model/IncidentReport';
+import { IncidentType } from '../../src/domain/model/IncidentReport';
+import { MockUserContextService } from '../../src/adapter/service/MockUserContextService';
 
 describe('Incident Reporting', () => {
   let facade: JourneyRadarFacade;
   let repository: InMemoryIncidentReportRepository;
+  let userContextService: MockUserContextService;
 
   beforeEach(() => {
     repository = new InMemoryIncidentReportRepository();
-    facade = new JourneyRadarFacade(repository);
+    userContextService = new MockUserContextService();
+    facade = new JourneyRadarFacade(repository, userContextService);
   });
 
   describe('reportIncident', () => {
-    it('should save an incident report from a user', async () => {
-      const incidentReport = new IncidentReport(
-        'incident_001',
-        { longitude: 21.0122, latitude: 52.2297 }, // Warsaw coordinates
-        { id: 'user_123', type: ReporterType.USER },
-        IncidentType.DELAY,
-        { reportedOnRoute: null },
-        new Date(),
-        'Train is running 15 minutes late'
-      );
+    it('should save an incident report from a user with inferred context', async () => {
+      const userId = 'user_123';
 
-      const result = await facade.reportIncident(incidentReport);
+      // Set up user context
+      userContextService.setUserLocation(userId, { longitude: 21.0122, latitude: 52.2297 });
 
-      expect(result).toEqual(incidentReport);
-      expect(result.id).toBe('incident_001');
+      const result = await facade.reportIncident(userId, IncidentType.DELAY, 'Train is running 15 minutes late');
+
+      expect(result).toBeDefined();
+      expect(result.id).toBeDefined();
       expect(result.incidentType).toBe(IncidentType.DELAY);
+      expect(result.location.longitude).toBe(21.0122);
+      expect(result.location.latitude).toBe(52.2297);
+      expect(result.reporter.id).toBe(userId);
+      expect(result.description).toBe('Train is running 15 minutes late');
     });
 
-    it('should save an incident report with route reference', async () => {
-      const incidentReport = new IncidentReport(
-        'incident_002',
-        { longitude: 21.0122, latitude: 52.2297 },
-        { id: 'user_456', type: ReporterType.USER },
-        IncidentType.ISSUES,
-        {
-          reportedOnRoute: {
-            origin: 'Warsaw Central',
-            destination: 'Krakow Main',
-            transportVehicleId: 'train_ic_1234'
-          }
-        },
-        new Date(),
-        'Train has minor technical issues'
-      );
+    it('should include active journey in incident report when user is on a journey', async () => {
+      const userId = 'user_456';
 
-      const result = await facade.reportIncident(incidentReport);
+      // Set up user context with active journey
+      userContextService.setUserLocation(userId, { longitude: 21.0122, latitude: 52.2297 });
+      userContextService.setUserJourney(userId, {
+        origin: 'Warsaw Central',
+        destination: 'Krakow Main',
+        transportVehicleId: 'train_ic_1234'
+      });
+
+      const result = await facade.reportIncident(userId, IncidentType.ISSUES, 'Train has minor technical issues');
 
       expect(result.details.reportedOnRoute).toBeDefined();
       expect(result.details.reportedOnRoute?.origin).toBe('Warsaw Central');
       expect(result.details.reportedOnRoute?.destination).toBe('Krakow Main');
+      expect(result.details.reportedOnRoute?.transportVehicleId).toBe('train_ic_1234');
     });
 
-    it('should save an incident report from a dispatcher', async () => {
-      const incidentReport = new IncidentReport(
-        'incident_003',
-        { longitude: 19.9450, latitude: 50.0647 }, // Krakow coordinates
-        { id: 'dispatcher_789', type: ReporterType.DISPATCHER },
-        IncidentType.SEVERE_BLOCKER,
-        { reportedOnRoute: null },
-        new Date(),
-        'Route blocked due to severe accident'
-      );
+    it('should use default location when user location is not set', async () => {
+      const userId = 'user_789';
 
-      const result = await facade.reportIncident(incidentReport);
+      const result = await facade.reportIncident(userId, IncidentType.SEVERE_BLOCKER, 'Route blocked due to severe accident');
 
-      expect(result.reporter.type).toBe(ReporterType.DISPATCHER);
-      expect(result.incidentType).toBe(IncidentType.SEVERE_BLOCKER);
+      expect(result.location).toBeDefined();
+      expect(result.location.longitude).toBe(21.0122); // Default Warsaw location
+      expect(result.location.latitude).toBe(52.2297);
     });
 
-    it('should save an incident report from an external system', async () => {
-      const incidentReport = new IncidentReport(
-        'incident_004',
-        { longitude: 18.6466, latitude: 54.3520 }, // Gdansk coordinates
-        { id: 'external_system_001', type: ReporterType.EXTERNAL_SYSTEM },
-        IncidentType.ISSUES,
-        { reportedOnRoute: null },
-        new Date(),
-        'Signal failure detected'
-      );
+    it('should handle all three incident types', async () => {
+      const incidents = [
+        { incidentType: IncidentType.ISSUES, description: 'Minor technical issues' },
+        { incidentType: IncidentType.DELAY, description: 'Running late' },
+        { incidentType: IncidentType.SEVERE_BLOCKER, description: 'Route blocked' }
+      ];
 
-      const result = await facade.reportIncident(incidentReport);
-
-      expect(result.reporter.type).toBe(ReporterType.EXTERNAL_SYSTEM);
-      expect(result.incidentType).toBe(IncidentType.ISSUES);
+      for (const incident of incidents) {
+        const result = await facade.reportIncident('user_test', incident.incidentType, incident.description);
+        expect(result.incidentType).toBe(incident.incidentType);
+        expect(result.description).toBe(incident.description);
+      }
     });
   });
 
   describe('Repository operations', () => {
     it('should retrieve incident by id', async () => {
-      const incidentReport = new IncidentReport(
-        'incident_005',
-        { longitude: 21.0122, latitude: 52.2297 },
-        { id: 'user_123', type: ReporterType.USER },
-        IncidentType.DELAY,
-        { reportedOnRoute: null },
-        new Date()
-      );
+      const userId = 'user_123';
+      const result = await facade.reportIncident(userId, IncidentType.DELAY);
 
-      await facade.reportIncident(incidentReport);
-      const found = await repository.findById('incident_005');
-
+      const found = await repository.findById(result.id);
       expect(found).toBeDefined();
-      expect(found?.id).toBe('incident_005');
+      expect(found?.id).toBe(result.id);
     });
 
     it('should retrieve incidents by route', async () => {
-      const incidentReport1 = new IncidentReport(
-        'incident_006',
-        { longitude: 21.0122, latitude: 52.2297 },
-        { id: 'user_123', type: ReporterType.USER },
-        IncidentType.DELAY,
-        {
-          reportedOnRoute: {
-            origin: 'Warsaw',
-            destination: 'Krakow',
-            transportVehicleId: 'train_001'
-          }
-        },
-        new Date()
-      );
+      const userId1 = 'user_123';
+      const userId2 = 'user_456';
 
-      const incidentReport2 = new IncidentReport(
-        'incident_007',
-        { longitude: 21.0122, latitude: 52.2297 },
-        { id: 'user_456', type: ReporterType.USER },
-        IncidentType.ISSUES,
-        {
-          reportedOnRoute: {
-            origin: 'Warsaw',
-            destination: 'Krakow',
-            transportVehicleId: 'train_002'
-          }
-        },
-        new Date()
-      );
+      userContextService.setUserJourney(userId1, {
+        origin: 'Warsaw',
+        destination: 'Krakow',
+        transportVehicleId: 'train_001'
+      });
 
-      await facade.reportIncident(incidentReport1);
-      await facade.reportIncident(incidentReport2);
+      userContextService.setUserJourney(userId2, {
+        origin: 'Warsaw',
+        destination: 'Krakow',
+        transportVehicleId: 'train_002'
+      });
+
+      await facade.reportIncident(userId1, IncidentType.DELAY);
+      await facade.reportIncident(userId2, IncidentType.ISSUES);
 
       const incidents = await repository.findByRoute('Warsaw', 'Krakow');
       expect(incidents).toHaveLength(2);
     });
 
     it('should retrieve incidents by location within radius', async () => {
+      const userId1 = 'user_123';
+      const userId2 = 'user_456';
+      const userId3 = 'user_789';
+
       // Warsaw Central Station
-      const incidentReport1 = new IncidentReport(
-        'incident_008',
-        { longitude: 21.0122, latitude: 52.2297 },
-        { id: 'user_123', type: ReporterType.USER },
-        IncidentType.DELAY,
-        { reportedOnRoute: null },
-        new Date()
-      );
+      userContextService.setUserLocation(userId1, { longitude: 21.0122, latitude: 52.2297 });
 
       // Close to Warsaw (within 5km)
-      const incidentReport2 = new IncidentReport(
-        'incident_009',
-        { longitude: 21.0200, latitude: 52.2350 },
-        { id: 'user_456', type: ReporterType.USER },
-        IncidentType.ISSUES,
-        { reportedOnRoute: null },
-        new Date()
-      );
+      userContextService.setUserLocation(userId2, { longitude: 21.0200, latitude: 52.2350 });
 
       // Far away (Krakow - over 250km)
-      const incidentReport3 = new IncidentReport(
-        'incident_010',
-        { longitude: 19.9450, latitude: 50.0647 },
-        { id: 'user_789', type: ReporterType.USER },
-        IncidentType.DELAY,
-        { reportedOnRoute: null },
-        new Date()
-      );
+      userContextService.setUserLocation(userId3, { longitude: 19.9450, latitude: 50.0647 });
 
-      await facade.reportIncident(incidentReport1);
-      await facade.reportIncident(incidentReport2);
-      await facade.reportIncident(incidentReport3);
+      await facade.reportIncident(userId1, IncidentType.DELAY);
+      await facade.reportIncident(userId2, IncidentType.ISSUES);
+      await facade.reportIncident(userId3, IncidentType.DELAY);
 
       const nearbyIncidents = await repository.findByLocation(21.0122, 52.2297, 10);
       expect(nearbyIncidents).toHaveLength(2);
-      expect(nearbyIncidents.map(i => i.id)).toContain('incident_008');
-      expect(nearbyIncidents.map(i => i.id)).toContain('incident_009');
     });
   });
 });
