@@ -6,13 +6,13 @@ import { Header } from '@/components/header';
 import { Station } from '@/types/station';
 import ApiHealthButton from '@/components/api-health-button';
 import { useRoute } from '@/contexts/RouteContext';
-import { FavouriteRoute } from '@/types/favourite';
-import { RoutesList } from '@/components/routes-list';
-import { mockFavouriteRoutes } from '@/services/routesData';
+import { useJourney } from '@/contexts/JourneyContext';
+import { Journey } from '@/types/journey';
+import { JourneysList } from '@/components/journeys-list';
 
 export default function HomeScreen() {
-  const { sourceStation, destinationStation, setSourceStation, setDestinationStation, setRoute } = useRoute();
-  const [lastUsedRoutes, setLastUsedRoutes] = useState<FavouriteRoute[]>(mockFavouriteRoutes);
+  const { sourceStation, destinationStation, setSourceStation, setDestinationStation } = useRoute();
+  const { getLastUsedJourneys, removeSavedJourney, setCurrentJourney } = useJourney();
 
   const handleSourceChange = (station: Station | null): void => {
     setSourceStation(station);
@@ -24,36 +24,55 @@ export default function HomeScreen() {
     console.log('Destination station set to:', station);
   };
 
-  const handleDeleteRoute = (routeId: string) => {
+  const handleDeleteJourney = (journeyId: string) => {
     Alert.alert(
-      'Delete Route',
-      'Are you sure you want to remove this route?',
+      'Delete Journey',
+      'Are you sure you want to remove this journey?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            setLastUsedRoutes(routes => routes.filter(route => route.id !== routeId));
+            removeSavedJourney(journeyId);
           }
         }
       ]
     );
   };
 
-  const handleUseRoute = (route: FavouriteRoute) => {
-    // Set the route in the shared context
-    setRoute(route.source, route.destination);
-    console.log('Using route:', route);
+  const handleUseJourney = (journey: Journey) => {
+    // Extract stations from journey segments
+    const firstSegment = journey.routes[0];
+    const lastSegment = journey.routes[journey.routes.length - 1];
+
+    // Create station objects from the journey data
+    const sourceStation: Station = {
+      id: `source_${firstSegment.id}`,
+      name: firstSegment.from,
+      coordinates: { latitude: 52.2297, longitude: 21.0122 }, // Mock coordinates
+      type: firstSegment.communicationMethod === 'train' ? 'train' : 'bus'
+    };
+
+    const destinationStation: Station = {
+      id: `dest_${lastSegment.id}`,
+      name: lastSegment.to,
+      coordinates: { latitude: 52.2319, longitude: 21.0067 }, // Mock coordinates
+      type: lastSegment.communicationMethod === 'train' ? 'train' : 'bus'
+    };
+
+    // Set the stations in the route context
+    setSourceStation(sourceStation);
+    setDestinationStation(destinationStation);
+
+    // Set as current journey
+    setCurrentJourney(journey);
+
+    console.log('Using journey:', journey);
   };
 
-  // Sort routes by last used date (most recent first)
-  const sortedRoutes = lastUsedRoutes
-    .filter(route => route.lastUsed)
-    .sort((a, b) => {
-      if (!a.lastUsed || !b.lastUsed) return 0;
-      return new Date(b.lastUsed).getTime() - new Date(a.lastUsed).getTime();
-    });
+  // Get last used journeys sorted by most recent
+  const lastUsedJourneys = getLastUsedJourneys();
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
@@ -66,16 +85,29 @@ export default function HomeScreen() {
         absolutePosition={false}
       />
 
-      <RoutesList
-        routes={sortedRoutes}
-        title="Last Used Routes"
+      <JourneysList
+        journeys={lastUsedJourneys}
+        title="Recent Journeys"
         icon="time"
-        emptyStateTitle="No Recent Routes"
-        emptyStateText="Your recently used routes will appear here."
-        onUseRoute={handleUseRoute}
-        onDeleteRoute={handleDeleteRoute}
+        emptyStateTitle="No Recent Journeys"
+        emptyStateText="Your recently used journeys will appear here."
+        onUseJourney={handleUseJourney}
+        onDeleteJourney={handleDeleteJourney}
         showActions={true}
       />
+
+      <TransportSelector />
+      {/* ApiHealthButton positioned to the left of TransportSelector */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: '100px',
+          right: '100px',
+          zIndex: 1000,
+        }}
+      >
+        <ApiHealthButton />
+      </div>
     </div>
   );
 }
