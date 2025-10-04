@@ -2,23 +2,15 @@ import { useState } from 'react';
 import { MapContainer } from '@/components/map-container';
 import TransportSelector from '@/components/transport-selector';
 import SlideTab from '@/components/slide-tab';
-import DefaultCommuteSettings from '@/components/default-commute-settings';
 import { StationInput } from '@/components/station-input';
 import { Header } from '@/components/header';
-import { CommuteType } from '@/types/commuting';
 import { Station } from '@/types/station';
 import ApiHealthButton from '@/components/api-health-button';
 
 export default function HomeScreen() {
   const [isSlideTabVisible, setIsSlideTabVisible] = useState(false);
-  const [defaultCommuteType, setDefaultCommuteType] = useState<CommuteType | null>(null);
   const [sourceStation, setSourceStation] = useState<Station | null>(null);
   const [destinationStation, setDestinationStation] = useState<Station | null>(null);
-
-  const handleCommuteTypeSelect = (type: CommuteType): void => {
-    setDefaultCommuteType(type);
-    console.log('Default commute type set to:', type);
-  };
 
   const handleSourceChange = (station: Station | null): void => {
     setSourceStation(station);
@@ -59,12 +51,9 @@ export default function HomeScreen() {
       <SlideTab
         visible={isSlideTabVisible}
         onClose={() => setIsSlideTabVisible(false)}
-        title="Commute Settings"
+        title="Notifications"
       >
-        <DefaultCommuteSettings
-          selectedType={defaultCommuteType}
-          onTypeSelect={handleCommuteTypeSelect}
-        />
+          <div>test</div>
       </SlideTab>
     </>
   );

@@ -20,8 +20,8 @@ export const Header: React.FC<HeaderProps> = ({ onSettingsPress }) => {
         <Text style={styles.projectTitle}>Journey Radar</Text>
         <FontAwesome name="map" size={20} style={{ marginLeft: 8 }} color={Colors.light.blue} />
       </View>
-      <TouchableOpacity onPress={onSettingsPress} style={styles.settingsButton}>
-        <Ionicons name="settings" size={20} color={Colors.light.icon} />
+      <TouchableOpacity onPress={onSettingsPress} style={styles.notificationsButton}>
+        <Ionicons name="notifications" size={20} color={Colors.light.icon} />
       </TouchableOpacity>
     </View>
   );
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.light.text,
   },
-  settingsButton: {
+  notificationsButton: {
     position: 'absolute',
     right: 20,
     padding: 8,

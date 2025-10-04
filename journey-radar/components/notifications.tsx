@@ -3,17 +3,17 @@ import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 
-interface SettingsButtonProps {
+interface NotificationsButtonProps {
   onPress: () => void;
 }
 
-export const SettingsButton: React.FC<SettingsButtonProps> = ({ onPress }) => {
+export const NotificationsButton: React.FC<NotificationsButtonProps> = ({ onPress }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
       style={styles.button}
     >
-      <Ionicons name="settings" size={24} color={Colors.light.background} />
+      <Ionicons name="notifications" size={24} color={Colors.light.background} />
     </TouchableOpacity>
   );
 };
