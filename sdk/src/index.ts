@@ -1,6 +1,17 @@
 import { enableApiDebug, configureApi } from './httpClient';
 import { healthCheck } from './health';
-export type { HealthResult } from './types';
+import { reportIncident } from './incidents';
+export type {
+  HealthResult,
+  Location,
+  RouteReference,
+  IncidentType,
+  ReporterType,
+  Reporter,
+  IncidentReportDetails,
+  CreateIncidentRequest,
+  IncidentReport
+} from './types';
 // New exports for typed HTTP helpers
 export {
   apiGet,
@@ -17,6 +28,7 @@ export {
 // Public API client object (backwards compatible with previous shape)
 export const apiClient = {
   healthCheck,
+  reportIncident,
 };
 
 export { enableApiDebug, configureApi };
