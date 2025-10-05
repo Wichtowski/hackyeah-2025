@@ -6,6 +6,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const health_1 = __importDefault(require("./routes/health"));
 const cors_1 = __importDefault(require("cors"));
+const JourneyRadarFacade_1 = require("./domain/facade/JourneyRadarFacade");
+const InMemoryIncidentReportRepository_1 = require("./adapter/repository/InMemoryIncidentReportRepository");
+const InMemoryUserLocationRepository_1 = require("./adapter/repository/InMemoryUserLocationRepository");
+const MockUserContextService_1 = require("./adapter/service/MockUserContextService");
+const incidentRoutes_1 = require("./adapter/rest/incoming/incidentRoutes");
+const locationMockRoutes_1 = require("./adapter/rest/incoming/locationMockRoutes");
+const journeysRoutes_1 = require("./adapter/rest/incoming/journeysRoutes");
 const app = (0, express_1.default)();
 const port = 3000;
 // CORS configuration (allow common Expo dev origins + configurable env)
@@ -24,8 +31,17 @@ app.use((0, cors_1.default)({
     },
     exposedHeaders: ['x-health-check'],
 }));
-// Mount API routers
-app.use('/api', health_1.default);
+// Parse JSON bodies for POST endpoints
+app.use(express_1.default.json());
+// Create facade and mount API routers
+const incidentReportRepository = new InMemoryIncidentReportRepository_1.InMemoryIncidentReportRepository();
+const userLocationRepository = new InMemoryUserLocationRepository_1.InMemoryUserLocationRepository();
+const userContextService = new MockUserContextService_1.MockUserContextService(userLocationRepository);
+const journeyRadarFacade = new JourneyRadarFacade_1.JourneyRadarFacade(incidentReportRepository, userContextService, userLocationRepository);
+app.use('/api', health_1.default); // legacy health route shape expected by SDK tests
+app.use('/api', (0, incidentRoutes_1.createIncidentRoutes)(journeyRadarFacade));
+app.use('/api', (0, locationMockRoutes_1.createLocationMockRoutes)(journeyRadarFacade));
+app.use('/api', (0, journeysRoutes_1.createJourneysRoutes)(journeyRadarFacade));
 app.get('/', (req, res) => {
     res.send('Hello from your new Express app!');
 });
