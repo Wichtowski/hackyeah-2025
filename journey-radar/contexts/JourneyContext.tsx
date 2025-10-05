@@ -30,9 +30,78 @@ interface JourneyProviderProps {
   children: ReactNode;
 }
 
+const mockedJourneys: Journey[] = [{
+    "routes": [
+        {
+            "stations": [
+                {
+                    "name": "Wawel"
+                },
+                {
+                    "name": "Stradom"
+                },
+                {
+                    "name": "Stary Kleparz"
+                },
+                {
+                    "name": "Starowiślna"
+                },
+                {
+                    "name": "Św. Wawrzyńca"
+                },
+                {
+                    "name": "Politechnika"
+                },
+                {
+                    "name": "Lubicz"
+                },
+                {
+                    "name": "Rondo Grzegórzeckie"
+                },
+                {
+                    "name": "Teatr Variété"
+                },
+                {
+                    "name": "Fabryczna"
+                },
+                {
+                    "name": "Białucha"
+                },
+                {
+                    "name": "TAURON Arena Kraków al. Pokoju"
+                },
+                {
+                    "name": "AKF / PK"
+                },
+                {
+                    "name": "Akademia Kultury Fizycznej"
+                }
+            ],
+            "delay": {
+                "time": 0
+            },
+            "incidents": [
+                {
+                    "connection": {
+                        "id": 13,
+                        "from": {
+                            "name": "AKF / PK"
+                        },
+                        "to": {
+                            "name": "Akademia Kultury Fizycznej"
+                        }
+                    }
+                },
+            ]
+        }
+    ],
+    "distance": 12.011,
+    "duration": 36
+} as Journey];
+
 export const JourneyProvider: React.FC<JourneyProviderProps> = ({ children }) => {
   const [currentJourney, setCurrentJourney] = useState<Journey | null>(null);
-  const [savedJourneys, setSavedJourneys] = useState<Journey[]>([]);
+  const [savedJourneys, setSavedJourneys] = useState<Journey[]>(mockedJourneys);
   const [favoriteJourneys, setFavoriteJourneys] = useState<Journey[]>([]);
 
   const addSavedJourney = (journey: Journey) => {

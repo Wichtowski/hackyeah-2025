@@ -10,6 +10,7 @@ export function createIncidentRoutes(facade: JourneyRadarCapabilities): Router {
     try {
       const { userId, incidentType, description } = req.body;
 
+
       // Validation
       if (!userId || typeof userId !== 'string') {
         return res.status(400).json({ error: 'Valid userId is required' });

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Route, Station, Incident, Journey as AppJourney, CommunicationMethod } from '@/types/journey';
+import {Route, Station, Journey as AppJourney, CommunicationMethod, Journey} from '@/types/journey';
 import { useJourney } from '@/contexts/JourneyContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import IncidentReportForm from '@/components/incident-report-form';
 import { useRouter } from 'expo-router';
 import { useRoute } from '@/contexts/RouteContext';
-import { apiClient, type Journey as SdkJourney, type IncidentType } from '@journey-radar/sdk';
+import { apiClient, type Journey as SdkJourney, type IncidentType, type JourneyProgress } from '@journey-radar/sdk';
 
 // Transform SDK Journey to App Journey
 const transformSdkJourneyToAppJourney = (
@@ -108,16 +108,17 @@ const StationNode: React.FC<{
   delay?: { time: number; description?: string };
   colors: typeof Colors.light;
   onPress?: () => void;
-}> = ({ station, delay, colors, onPress }) => {
+  isCurrent?: boolean;
+}> = ({ station, delay, colors, onPress, isCurrent }) => {
   return (
     <TouchableOpacity
-      style={styles.routeRow}
+      style={[styles.routeRow, isCurrent && { backgroundColor: colors.lightblue + '22', borderRadius: 8, paddingVertical: 4 }] as any}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
     >
       <View style={styles.leftSection}>
         <View style={styles.stationInfo}>
-          <Text style={[styles.stationName, { color: colors.text }] as any}>
+          <Text style={[styles.stationName, { color: isCurrent ? colors.pink : colors.text }] as any}>
             {station.name}
           </Text>
           {delay && (
@@ -132,7 +133,7 @@ const StationNode: React.FC<{
       </View>
 
       <View style={styles.centerDot}>
-        <View style={[styles.stationDot, { backgroundColor: colors.blue }]} />
+        <View style={[styles.stationDot, { backgroundColor: isCurrent ? colors.pink : colors.blue, transform: isCurrent ? [{ scale: 1.3 }] : undefined }] as any} />
       </View>
 
       <View style={styles.rightSection}>
@@ -315,6 +316,80 @@ export default function JourneyScreen(): React.JSX.Element {
     }
   }, [showIncidentThanksModal]);
 
+  // Auto start backend journey when a journey is available (guarded to avoid double call in React StrictMode)
+  useEffect(() => {
+    if (!journey) return;
+    if (backendJourneyId || journeyStartRequestedRef.current) return;
+    journeyStartRequestedRef.current = true; // mark to prevent duplicate network call
+    (async () => {
+      try {
+        const sdkJourney: SdkJourney = {
+          routes: journey.routes.map(r => ({
+            stations: r.stations.map(s => ({ name: s.name })),
+            delay: (r as any).delay || { time: 0 },
+            incidents: [],
+          })),
+          distance: journey.distance || 0,
+          durationInSeconds: journey.duration || 0,
+        } as SdkJourney;
+        const resp = await apiClient.startJourney(sdkJourney);
+        setBackendJourneyId(resp.journey_id);
+        console.log('Started backend journey', resp.journey_id);
+      } catch (e) {
+        console.warn('Failed to start backend journey', e);
+      }
+    })();
+  }, [journey]);
+
+  // Poll journey progress every 5 seconds and move UserPositionNode based on currentStage
+useEffect(() => {
+  if (!backendJourneyId || !journey) return; // wait until journey started and available
+  let cancelled = false;
+  let pollTimer: any;
+
+  const poll = async () => {
+    try {
+      // Simulate user coordinates (mocked)
+      const coords = { latitude: 0, longitude: 0 };
+      const progress = await apiClient.getJourneyStageWithUser(
+        backendJourneyId,
+        coords,
+        'user_1'
+      );
+
+      if (!cancelled) {
+        setJourneyProgress(progress);
+
+        // --- NEW LOGIC: Move user marker to station matching currentStage ---
+        const { currentStage } = progress.progress;
+        const allStations = journey.routes.flatMap(r => r.stations);
+
+        if (allStations[currentStage]) {
+          const station = allStations[currentStage];
+          // derive mock coordinates from station name
+          const hash = station.name.split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+          const lat = 50.05936 + (hash % 100) / 1000;
+          const lng = 19.93435 + ((hash * 7) % 100) / 1000;
+          setUserCoordinates({ latitude: lat, longitude: lng });
+        } else {
+          console.warn(`Stage index ${currentStage} out of bounds`);
+        }
+      }
+    } catch (e) {
+      console.warn('Polling journey progress failed', e);
+    } finally {
+      if (!cancelled) pollTimer = setTimeout(poll, 5000);
+    }
+  };
+
+  poll();
+  return () => {
+    cancelled = true;
+    if (pollTimer) clearTimeout(pollTimer);
+  };
+}, [backendJourneyId, journey, journeyProgress]);
+
+
   // If no journey is available, show a message
   if (!journey) {
     return (
@@ -355,6 +430,17 @@ export default function JourneyScreen(): React.JSX.Element {
               />
             </TouchableOpacity>
           </View>
+          <View style={styles.progressBarContainer}>
+            {backendJourneyId && (
+              <View style={styles.progressInfo}>
+                <Text style={[styles.progressLine, { color: colors.text }] as any}>Progress: {journeyProgress ? `${journeyProgress.progress.currentRoute + 1}/${journeyProgress.routes.length}` : '...'} route</Text>
+                <Text style={[styles.progressLine, { color: colors.text }] as any}>Segment: {journeyProgress ? `${journeyProgress.progress.currentConnection.from.name} → ${journeyProgress.progress.currentConnection.to.name}` : '...'}</Text>
+                {userCoordinates && (
+                  <Text style={[styles.progressCoords, { color: colors.icon }] as any}>{userCoordinates.latitude.toFixed(4)}, {userCoordinates.longitude.toFixed(4)}</Text>
+                )}
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.treeContainer}>
@@ -366,6 +452,14 @@ export default function JourneyScreen(): React.JSX.Element {
                 isLast={index === journey.routes.length - 1}
                 colors={colors}
                 onStationPress={handleStationPress}
+                currentConnection={journeyProgress ? { from: journeyProgress.progress.currentConnection.from.name, to: journeyProgress.progress.currentConnection.to.name } : null}
+                userPosition={(() => {
+                  if (!journeyProgress) return null;
+                  const conn = journeyProgress.progress.currentConnection;
+                  const fraction = conn.id - Math.trunc(conn.id);
+                  if (fraction <= 0 || fraction >= 1) return null; // at station boundaries handled by StationNode
+                  return { from: conn.from.name, to: conn.to.name, fraction };
+                })()}
               />
             </View>
           ))}
@@ -420,7 +514,109 @@ export default function JourneyScreen(): React.JSX.Element {
                 destinationStation
               );
 
-              setCurrentJourney(updatedJourney);
+              const updateJourney2 = {
+    "routes": [
+        {
+            "stations": [
+                {
+                    "name": "Wawel"
+                },
+                {
+                    "name": "Stradom"
+                },
+                {
+                    "name": "Stary Kleparz"
+                },
+                {
+                    "name": "Starowiślna"
+                },
+                {
+                    "name": "Św. Wawrzyńca"
+                },
+                {
+                    "name": "Politechnika"
+                },
+                {
+                    "name": "Lubicz"
+                },
+                {
+                    "name": "Rondo Grzegórzeckie"
+                },
+                {
+                    "name": "Teatr Variété"
+                },
+                {
+                    "name": "Fabryczna"
+                },
+                {
+                    "name": "Białucha"
+                },
+                {
+                    "name": "TAURON Arena Kraków al. Pokoju"
+                },
+                {
+                    "name": "AKF / PK"
+                },
+                {
+                    "name": "Akademia Kultury Fizycznej"
+                }
+            ],
+            "delay": {
+                "time": 0
+            },
+            "incidents": [
+                {
+                    "connection": {
+                        "id": 13,
+                        "from": {
+                            "name": "AKF / PK"
+                        },
+                        "to": {
+                            "name": "Akademia Kultury Fizycznej"
+                        }
+                    }
+                },
+                {
+                    "connection": {
+                        "id": 13,
+                        "from": {
+                            "name": "AKF / PK"
+                        },
+                        "to": {
+                            "name": "Akademia Kultury Fizycznej"
+                        }
+                    }
+                },
+                {
+                    "connection": {
+                        "id": 13,
+                        "from": {
+                            "name": "AKF / PK"
+                        },
+                        "to": {
+                            "name": "Akademia Kultury Fizycznej"
+                        }
+                    }
+                },
+                {
+                    "connection": {
+                        "id": 13,
+                        "from": {
+                            "name": "AKF / PK"
+                        },
+                        "to": {
+                            "name": "Akademia Kultury Fizycznej"
+                        }
+                    }
+                }
+            ]
+        }
+    ],
+    "distance": 12.011,
+    "duration": 36
+} as Journey;
+
+              setCurrentJourney(updateJourney2);
               console.log('Journey reloaded with new incidents');
             } else {
               console.warn('Cannot reload journey: source or destination station not available');
@@ -495,7 +691,7 @@ export default function JourneyScreen(): React.JSX.Element {
               minHeight: Dimensions.get('window').height * 0.22,
               justifyContent: 'center'
             }
-          ]}>
+          ] as any}>
             <View style={styles.incidentThanksContainer}>
               <MaterialIcons name="check-circle" size={48} color={colors.pink} />
               <Text style={[styles.incidentThanksText, { color: colors.text }] as any}>Dziękujemy za informację!</Text>
@@ -582,6 +778,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   reportButtonText: { color: 'white', fontSize: 16, fontWeight: '600', marginLeft: 8 },
+  progressBarContainer: { marginTop: 12, marginHorizontal: 4, padding: 12, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(0,0,0,0.1)' },
+  startTrackingBtn: { paddingVertical: 10, paddingHorizontal: 16, borderRadius: 8, alignSelf: 'flex-start' },
+  startTrackingBtnText: { color: 'white', fontSize: 14, fontWeight: '600' },
+  progressInfo: {},
+  progressLine: { fontSize: 12, fontWeight: '600', marginBottom: 2 },
+  progressCoords: { fontSize: 11 },
   emptyState: {
     flex: 1,
     justifyContent: 'center',

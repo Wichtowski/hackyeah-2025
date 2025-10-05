@@ -20,11 +20,18 @@ export interface Delay {
   description?: string;
 }
 
+export interface Connection {
+  from: Station;
+  to: Station;
+  id: string;
+}
+
 export interface Incident {
   id: string;
   stationId: string;
   position: Position;
   description: string;
+  connection: Connection;
   severity: 'small' | 'medium' | 'high';
   type: 'delay' | 'problem' | 'cancelled';
 }
