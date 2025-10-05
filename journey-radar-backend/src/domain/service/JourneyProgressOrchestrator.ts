@@ -14,7 +14,7 @@ export class JourneyProgressOrchestrator {
 
   async computeAndPersist(journeyId: string, coordinates: Coordinates, userId?: string): Promise<JourneyProgress> {
     const journey: Journey | undefined = this.journeySessionService.getJourney(journeyId);
-    const effectiveJourney = journey ?? this.journeyService.computeJourney({ station: { name: 'Unknown' } }, { station: { name: 'Unknown' } });
+    const effectiveJourney = journey ?? await this.journeyService.computeJourney({ station: { name: 'Unknown' } }, { station: { name: 'Unknown' } });
 
     const progress = await this.journeyProgressService.computeProgress(effectiveJourney, coordinates, journeyId);
 

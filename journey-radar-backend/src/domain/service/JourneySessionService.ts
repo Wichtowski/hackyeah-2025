@@ -18,6 +18,14 @@ export class JourneySessionService {
     return this.sessions.get(journeyId);
   }
 
+  setJourney(journeyId: string, journey: Journey): void {
+    this.sessions.set(journeyId, journey);
+  }
+
+  getAllSessions(): Array<{ journeyId: string; journey: Journey }> {
+    return Array.from(this.sessions.entries()).map(([journeyId, journey]) => ({ journeyId, journey }));
+  }
+
   associateUser(journeyId: string, userId: string): void {
     this.journeyIdToUserId.set(journeyId, userId);
   }

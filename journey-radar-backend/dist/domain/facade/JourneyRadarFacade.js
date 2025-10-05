@@ -22,7 +22,7 @@ class JourneyRadarFacade {
     incidentReportingService;
     finishedJourneyService;
     progressOrchestrator;
-    constructor(incidentReportRepository, userContextService, userLocationRepository, journeyProgressRepository, finishedJourneyRepository, journeyService = new JourneyService_1.JourneyService()) {
+    constructor(incidentReportRepository, userContextService, userLocationRepository, journeyProgressRepository, finishedJourneyRepository, journeyService = new JourneyService_1.JourneyService(incidentReportRepository)) {
         this.incidentReportRepository = incidentReportRepository;
         this.userContextService = userContextService;
         this.userLocationRepository = userLocationRepository;
@@ -39,7 +39,36 @@ class JourneyRadarFacade {
         return { status: 'OK', domain: 'JourneyRadar' };
     }
     async reportIncident(userId, incidentType, description) {
-        return this.incidentReportingService.reportIncident(userId, incidentType, description);
+        const saved = await this.incidentReportingService.reportIncident(userId, incidentType, description);
+        // If incident is tied to a route, update all active journeys matching that route
+        const routeRef = saved.details.reportedOnRoute;
+        if (routeRef) {
+            const sessions = this.journeySessionService.getAllSessions();
+            for (const { journeyId, journey } of sessions) {
+                // Determine if any route in journey matches the origin/destination by names
+                const matches = journey.routes.some(r => {
+                    const first = r.stations[0]?.name;
+                    const last = r.stations[r.stations.length - 1]?.name;
+                    return first === routeRef.origin && last === routeRef.destination;
+                });
+                if (!matches)
+                    continue;
+                // Recompute incidents for each matching route using JourneyService mapping
+                const updatedRoutes = await Promise.all(journey.routes.map(async (r) => {
+                    const first = r.stations[0]?.name;
+                    const last = r.stations[r.stations.length - 1]?.name;
+                    if (first === routeRef.origin && last === routeRef.destination) {
+                        // compute incidents for this route only
+                        const incidents = await this.journeyService.findIncidentsForRoute(first, last, r.stations);
+                        return { ...r, incidents };
+                    }
+                    return r;
+                }));
+                const updatedJourney = { ...journey, routes: updatedRoutes };
+                this.journeySessionService.setJourney(journeyId, updatedJourney);
+            }
+        }
+        return saved;
     }
     async mockUserLocation(userId, longitude, latitude) {
         console.log(`Domain: Mocking location for user ${userId} at (${latitude}, ${longitude})`);

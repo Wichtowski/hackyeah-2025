@@ -1,14 +1,21 @@
 import { Destination, Distance, Duration, Journey, Origin, Route, Station } from '../model/Journey';
 import { HARDCODED_STOPS, StopWithDegrees, findStopByName } from '@domain/model/hardcodedStops';
+import { IncidentReportRepository } from '../repository/IncidentReportRepository';
 
 export class JourneyService {
-  computeJourney(origin: Origin, destination: Destination): Journey {
+  constructor(private readonly incidentReportRepository?: IncidentReportRepository) {}
+
+  async computeJourney(origin: Origin, destination: Destination): Promise<Journey> {
     const start = findStopByName(origin.station.name);
     const end = findStopByName(destination.station.name);
 
     // Fallback: if we cannot map names to known stops, return a simple direct route
     if (!start || !end) {
-      const simple: Route = { stations: [origin.station, destination.station], delay: { time: 0 }, incidents: [] };
+      const baseRoute: Route = { stations: [origin.station, destination.station], delay: { time: 0 }, incidents: [] };
+
+      // Populate incidents based on route reference if repository is available
+      const incidents = await this.findIncidentsForRoute(origin.station.name, destination.station.name, baseRoute.stations);
+      const simple: Route = { ...baseRoute, incidents };
       return { routes: [simple], distance: 0, duration: 0 };
     }
 
@@ -24,7 +31,8 @@ export class JourneyService {
     // De-duplicate any accidental repeats
     const deduped = stations.filter((s, i, arr) => i === 0 || s.name !== arr[i - 1].name);
 
-    const route: Route = { stations: deduped, delay: { time: 0 }, incidents: [] };
+    const incidents = await this.findIncidentsForRoute(start.name, end.name, deduped);
+    const route: Route = { stations: deduped, delay: { time: 0 }, incidents };
     const distanceKm = this.computeRouteDistanceKm(deduped);
     const approxDurationMin = this.estimateDurationMinutes(distanceKm);
 
@@ -32,6 +40,56 @@ export class JourneyService {
     const duration: Duration = approxDurationMin;
 
     return { routes: [route], distance, duration };
+  }
+
+  private async findIncidentsForRoute(originName: string, destinationName: string, stations: Station[]): Promise<{ connection: { id: number; from: Station; to: Station } }[]> {
+    if (!this.incidentReportRepository) return [];
+    try {
+      const reports = await this.incidentReportRepository.findByRoute(originName, destinationName);
+      if (!reports?.length) return [];
+      if ((stations?.length ?? 0) < 2) return [];
+
+      // Build connections list from stations
+      const connections = [] as { id: number; from: Station; to: Station }[];
+      for (let i = 0; i < stations.length - 1; i++) {
+        connections.push({ id: i + 1, from: stations[i], to: stations[i + 1] });
+      }
+
+      // Helper to get coordinates for a station name from hardcoded stops
+      const getCoords = (name: string): { lat: number; lon: number } | null => {
+        const s = HARDCODED_STOPS.find(h => h.name === name);
+        return s ? { lat: s.latitude, lon: s.longitude } : null;
+      };
+
+      // Haversine distance in km
+      const haversineKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+        const R = 6371;
+        const toRad = (deg: number) => deg * (Math.PI / 180);
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      };
+
+      // Map each report to the nearest connection by distance from report location to the midpoint of the connection
+      return reports.map((rep) => {
+        let bestConn = connections[0];
+        let bestDist = Number.POSITIVE_INFINITY;
+        for (const conn of connections) {
+          const a = getCoords(conn.from.name);
+          const b = getCoords(conn.to.name);
+          if (!a || !b) continue;
+          const midLat = (a.lat + b.lat) / 2;
+          const midLon = (a.lon + b.lon) / 2;
+          const d = haversineKm(rep.location.latitude, rep.location.longitude, midLat, midLon);
+          if (d < bestDist) { bestDist = d; bestConn = conn; }
+        }
+        return { connection: bestConn };
+      });
+    } catch {
+      return [];
+    }
   }
 
   private buildStationsAlongCorridor(start: StopWithDegrees, end: StopWithDegrees): Station[] {
