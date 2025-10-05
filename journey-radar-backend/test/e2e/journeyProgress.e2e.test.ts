@@ -54,7 +54,7 @@ describe('E2E: Journey progression using SDK http client + location mocker', () 
       routes: { stations: { name: string }[]; delay: { time: number }; incidents: unknown[] }[];
       distance: number;
       duration: number;
-    }>(`/journeys?origin=${encodeURIComponent('A')}&destination=${encodeURIComponent('C')}`);
+    }>(`/journeys?origin=${encodeURIComponent('Rondo Matecznego')}&destination=${encodeURIComponent('Wawel')}`);
 
     expect(Array.isArray(journey.routes)).toBe(true);
 
@@ -89,7 +89,7 @@ describe('E2E: Journey progression using SDK http client + location mocker', () 
       routes: { stations: { name: string }[]; delay: { time: number }; incidents: unknown[] }[];
       distance: number;
       duration: number;
-    }>(`/journeys?origin=${encodeURIComponent('A')}&destination=${encodeURIComponent('C')}`);
+    }>(`/journeys?origin=${encodeURIComponent('Rondo Matecznego')}&destination=${encodeURIComponent('Wawel')}`);
 
     const start = await apiPost<{
       journey_id: string;
@@ -113,7 +113,7 @@ describe('E2E: Journey progression using SDK http client + location mocker', () 
 
     await apiPost(`/mock/location`, { userId: demoUserId, longitude: 21.0122, latitude: 52.2297 });
 
-    const journey = await apiGet<any>(`/journeys?origin=${encodeURIComponent('A')}&destination=${encodeURIComponent('C')}`);
+    const journey = await apiGet<any>(`/journeys?origin=${encodeURIComponent('Rondo Matecznego')}&destination=${encodeURIComponent('Wawel')}`);
     const start = await apiPost<any, any>(`/journeys/start`, journey);
 
     // First, progress somewhere (non-final)

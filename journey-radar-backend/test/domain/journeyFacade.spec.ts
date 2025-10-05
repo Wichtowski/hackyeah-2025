@@ -33,8 +33,8 @@ describe('Journey Facade Capabilities', () => {
   });
 
   it('getJourney returns Journey type', async () => {
-    const origin = { station: { name: 'A' } };
-    const destination = { station: { name: 'C' } };
+    const origin = { station: { name: 'Rondo Matecznego' } };
+    const destination = { station: { name: 'Wawel' } };
 
     // Implementation will compute, here we assert shape
     const journey = await facade.getJourney(origin, destination);
@@ -47,8 +47,8 @@ describe('Journey Facade Capabilities', () => {
   it('startJourney returns JourneyStartResponse with ISO updated_at', async () => {
     const journey: Journey = {
       routes: [
-        { stations: [{ name: 'A' }, { name: 'B' }], delay: { time: 2 }, incidents: [] },
-        { stations: [{ name: 'B' }, { name: 'C' }], delay: { time: 3 }, incidents: [] }
+        { stations: [{ name: 'Rondo Matecznego' }, { name: 'Smolki' }], delay: { time: 2 }, incidents: [] },
+        { stations: [{ name: 'Smolki' }, { name: 'Wawel' }], delay: { time: 3 }, incidents: [] }
       ],
       distance: 10,
       duration: 30
@@ -65,8 +65,8 @@ describe('Journey Facade Capabilities', () => {
   it('getJourneyProgress returns JourneyProgress with journeyId and first/last stations', async () => {
     const journey: Journey = {
       routes: [
-        { stations: [{ name: 'A' }, { name: 'B' }], delay: { time: 2 }, incidents: [] },
-        { stations: [{ name: 'B' }, { name: 'C' }], delay: { time: 3 }, incidents: [] }
+        { stations: [{ name: 'Rondo Matecznego' }, { name: 'Smolki' }], delay: { time: 2 }, incidents: [] },
+        { stations: [{ name: 'Smolki' }, { name: 'Wawel' }], delay: { time: 3 }, incidents: [] }
       ],
       distance: 10,
       duration: 30
@@ -77,8 +77,8 @@ describe('Journey Facade Capabilities', () => {
     const progress = await facade.getJourneyProgress(start.journey_id, { longitude: 0, latitude: 0 });
 
     expect(progress.journeyId).toBe(start.journey_id);
-    expect(progress.firstStation.name).toBe('A');
-    expect(progress.lastStation.name).toBe('C');
+    expect(progress.firstStation.name).toBe('Rondo Matecznego');
+    expect(progress.lastStation.name).toBe('Wawel');
     expect(typeof progress.progress.currentRoute).toBe('number');
     expect(typeof progress.progress.currentStage).toBe('number');
     expect(progress.progress.currentConnection.from.name).toBeDefined();

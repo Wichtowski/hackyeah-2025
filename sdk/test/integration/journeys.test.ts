@@ -37,8 +37,8 @@ describe('SDK integration - journeys endpoints', () => {
   });
 
   test('getJourney uses GET with query string and returns Journey', async () => {
-    const origin = { station: { name: 'A' } };
-    const destination = { station: { name: 'C' } };
+    const origin = { station: { name: 'Rondo Matecznego' } };
+    const destination = { station: { name: 'Wawel' } };
 
     const journey = await (apiClient as any).getJourney(origin, destination);
 
@@ -50,8 +50,8 @@ describe('SDK integration - journeys endpoints', () => {
   test('startJourney uses POST with Journey body and returns JourneyStartResponse', async () => {
     const journey = {
       routes: [
-        { stations: [{ name: 'A' }, { name: 'B' }], delay: { time: 0 }, incidents: [] },
-        { stations: [{ name: 'B' }, { name: 'C' }], delay: { time: 0 }, incidents: [] }
+        { stations: [{ name: 'Rondo Matecznego' }, { name: 'Smolki' }], delay: { time: 0 }, incidents: [] },
+        { stations: [{ name: 'Smolki' }, { name: 'Wawel' }], delay: { time: 0 }, incidents: [] }
       ],
       distance: 10,
       duration: 30
@@ -68,8 +68,8 @@ describe('SDK integration - journeys endpoints', () => {
   test('getJourneyStage uses GET with query string and returns JourneyProgress', async () => {
     const journey = {
       routes: [
-        { stations: [{ name: 'A' }, { name: 'B' }], delay: { time: 0 }, incidents: [] },
-        { stations: [{ name: 'B' }, { name: 'C' }], delay: { time: 0 }, incidents: [] }
+        { stations: [{ name: 'Rondo Matecznego' }, { name: 'Smolki' }], delay: { time: 0 }, incidents: [] },
+        { stations: [{ name: 'Smolki' }, { name: 'Wawel' }], delay: { time: 0 }, incidents: [] }
       ],
       distance: 10,
       duration: 30
@@ -88,7 +88,7 @@ describe('SDK integration - journeys endpoints', () => {
     const userId = 'sdk_user_hist_1';
 
     // Drive a short journey to completion by querying near destination
-    const journey = await (apiClient as any).getJourney({ station: { name: 'A' } }, { station: { name: 'C' } });
+    const journey = await (apiClient as any).getJourney({ station: { name: 'Rondo Matecznego' } }, { station: { name: 'Wawel' } });
     const start = await (apiClient as any).startJourney(journey);
 
     // First, a non-final progress
@@ -103,7 +103,7 @@ describe('SDK integration - journeys endpoints', () => {
 
   test('Errors surfaced as ApiError with status and message on validation failure', async () => {
     try {
-      await (apiClient as any).getJourney({ station: { name: 'A' } }, { station: { name: '' } });
+      await (apiClient as any).getJourney({ station: { name: 'Rondo Matecznego' } }, { station: { name: '' } });
       fail('Expected error');
     } catch (err: any) {
       expect(err.status).toBe(400);

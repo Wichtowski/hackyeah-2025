@@ -27,8 +27,8 @@ describe('Journey Domain Behavior', () => {
   it('Journey distance and duration sum across all routes', async () => {
     const journey: Journey = {
       routes: [
-        { stations: [{ name: 'A' }, { name: 'B' }], delay: { time: 2 }, incidents: [] },
-        { stations: [{ name: 'B' }, { name: 'C' }], delay: { time: 3 }, incidents: [] }
+        { stations: [{ name: 'Rondo Matecznego' }, { name: 'Smolki' }], delay: { time: 2 }, incidents: [] },
+        { stations: [{ name: 'Smolki' }, { name: 'Wawel' }], delay: { time: 3 }, incidents: [] }
       ],
       distance: 10,
       duration: 30
@@ -42,9 +42,9 @@ describe('Journey Domain Behavior', () => {
   });
 
   it('Route has a single Delay and a list of Incidents', async () => {
-    const connection: Connection = { id: 1, from: { name: 'A' }, to: { name: 'B' } };
+    const connection: Connection = { id: 1, from: { name: 'Rondo Matecznego' }, to: { name: 'Smolki' } };
     const route: Route = {
-      stations: [{ name: 'A' }, { name: 'B' }],
+      stations: [{ name: 'Rondo Matecznego' }, { name: 'Smolki' }],
       delay: { time: 5 },
       incidents: [{ connection }, { connection }]
     };
@@ -58,31 +58,31 @@ describe('Journey Domain Behavior', () => {
     const progress = {
       currentRoute: 0,
       currentStage: 1,
-      currentConnection: { id: 42, from: { name: 'A' }, to: { name: 'B' } }
+      currentConnection: { id: 42, from: { name: 'Rondo Matecznego' }, to: { name: 'Smolki' } }
     };
 
     expect(typeof progress.currentRoute).toBe('number');
     expect(typeof progress.currentStage).toBe('number');
-    expect(progress.currentConnection.from.name).toBe('A');
-    expect(progress.currentConnection.to.name).toBe('B');
+    expect(progress.currentConnection.from.name).toBe('Rondo Matecznego');
+    expect(progress.currentConnection.to.name).toBe('Smolki');
   });
 
   it('JourneyProgress exposes journeyId, firstStation and lastStation', async () => {
     const journeyProgress = {
       journeyId: 'journey_test',
       routes: [
-        { stations: [{ name: 'A' }, { name: 'B' }], delay: { time: 2 }, incidents: [] },
-        { stations: [{ name: 'B' }, { name: 'C' }], delay: { time: 3 }, incidents: [] }
+        { stations: [{ name: 'Rondo Matecznego' }, { name: 'Smolki' }], delay: { time: 2 }, incidents: [] },
+        { stations: [{ name: 'Smolki' }, { name: 'Wawel' }], delay: { time: 3 }, incidents: [] }
       ],
-      progress: { currentRoute: 0, currentStage: 0, currentConnection: { id: 1, from: { name: 'A' }, to: { name: 'B' } } },
+      progress: { currentRoute: 0, currentStage: 0, currentConnection: { id: 1, from: { name: 'Rondo Matecznego' }, to: { name: 'Smolki' } } },
       delay: { time: 5 },
-      firstStation: { name: 'A' },
-      lastStation: { name: 'C' }
+      firstStation: { name: 'Rondo Matecznego' },
+      lastStation: { name: 'Wawel' }
     };
 
     expect(journeyProgress.journeyId).toBe('journey_test');
-    expect(journeyProgress.firstStation.name).toBe('A');
-    expect(journeyProgress.lastStation.name).toBe('C');
+    expect(journeyProgress.firstStation.name).toBe('Rondo Matecznego');
+    expect(journeyProgress.lastStation.name).toBe('Wawel');
     expect(journeyProgress.delay.time).toBe(5);
   });
 });

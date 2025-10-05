@@ -9,34 +9,11 @@ import { JourneyProgressService } from '../service/JourneyProgressService';
 import { JourneyProgressRepository } from '../repository/JourneyProgressRepository';
 import { FinishedJourneyRepository } from '../repository/FinishedJourneyRepository';
 import { FinishedJourney } from '../model/FinishedJourney';
+import { InMemoryJourneyProgressRepository } from '@adapter/repository/InMemoryJourneyProgressRepository';
 
 const sessions: Map<string, Journey> = new Map();
 const journeyIdToStartedAt: Map<string, string> = new Map();
 const journeyIdToUserId: Map<string, string> = new Map();
-
-class InMemoryProgressRepository implements JourneyProgressRepository {
-  private readonly journeyIdToProgresses: Map<string, JourneyProgress[]> = new Map();
-
-  async save(progress: JourneyProgress): Promise<void> {
-    const list = this.journeyIdToProgresses.get(progress.journeyId) ?? [];
-    list.push(progress);
-    this.journeyIdToProgresses.set(progress.journeyId, list);
-  }
-
-  async findByJourneyId(journeyId: string): Promise<JourneyProgress | undefined> {
-    const list = this.journeyIdToProgresses.get(journeyId);
-    if (!list || list.length === 0) return undefined;
-    return list[list.length - 1];
-  }
-
-  async findAll(): Promise<JourneyProgress[]> {
-    const all: JourneyProgress[] = [];
-    for (const list of this.journeyIdToProgresses.values()) {
-      all.push(...list);
-    }
-    return all;
-  }
-}
 
 export class JourneyRadarFacade implements JourneyRadarCapabilities {
   private readonly journeyProgressService: JourneyProgressService;
@@ -49,18 +26,8 @@ export class JourneyRadarFacade implements JourneyRadarCapabilities {
     private readonly finishedJourneyRepository?: FinishedJourneyRepository,
     private readonly journeyService: JourneyService = new JourneyService()
   ) {
-    const repo = journeyProgressRepository ?? new InMemoryProgressRepository();
+    const repo = journeyProgressRepository ?? new InMemoryJourneyProgressRepository();
     this.journeyProgressService = new JourneyProgressService(repo);
-  }
-
-  async planJourney(params: { origin: string; destination: string }): Promise<any> {
-    console.log(`Domain: Planning journey from ${params.origin} to ${params.destination}...`);
-    return { id: 'journey_123', status: 'PLANNED', from: params.origin, to: params.destination };
-  }
-
-  async getJourneyById(id: string): Promise<any> {
-    console.log(`Domain: Getting journey by id ${id}...`);
-    return { id, details: 'Journey details here' };
   }
 
   async checkHealth(): Promise<{ status: string; domain: string }> {

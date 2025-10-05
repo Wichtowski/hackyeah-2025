@@ -21,7 +21,7 @@ describe('Journeys Routes', () => {
     it('should use GET and return Journey for valid origin and destination', async () => {
       const response = await request(app)
         .get('/api/journeys')
-        .query({ origin: 'A', destination: 'C' })
+        .query({ origin: 'Rondo Matecznego', destination: 'Wawel' })
         .expect(200);
 
       expect(Array.isArray(response.body.routes)).toBe(true);
@@ -30,13 +30,13 @@ describe('Journeys Routes', () => {
 
       expect(mockFacade.calls[mockFacade.calls.length - 1].method).toBe('getJourney');
       const args = mockFacade.calls[mockFacade.calls.length - 1].args as any[];
-      expect(args[0]).toEqual({ station: { name: 'A' } });
-      expect(args[1]).toEqual({ station: { name: 'C' } });
+      expect(args[0]).toEqual({ station: { name: 'Rondo Matecznego' } });
+      expect(args[1]).toEqual({ station: { name: 'Wawel' } });
     });
 
     it('should return 400 when origin or destination is missing', async () => {
-      await request(app).get('/api/journeys').query({ origin: 'A' }).expect(400);
-      await request(app).get('/api/journeys').query({ destination: 'B' }).expect(400);
+      await request(app).get('/api/journeys').query({ origin: 'Rondo Matecznego' }).expect(400);
+      await request(app).get('/api/journeys').query({ destination: 'Smolki' }).expect(400);
       await request(app).get('/api/journeys').expect(400);
     });
   });
@@ -45,8 +45,8 @@ describe('Journeys Routes', () => {
     it('should use POST and return JourneyStartResponse for valid Journey body', async () => {
       const journey = {
         routes: [
-          { stations: [{ name: 'A' }, { name: 'B' }], delay: { time: 0 }, incidents: [] },
-          { stations: [{ name: 'B' }, { name: 'C' }], delay: { time: 0 }, incidents: [] }
+          { stations: [{ name: 'Rondo Matecznego' }, { name: 'Smolki' }], delay: { time: 0 }, incidents: [] },
+          { stations: [{ name: 'Smolki' }, { name: 'Wawel' }], delay: { time: 0 }, incidents: [] }
         ],
         distance: 10,
         duration: 30
