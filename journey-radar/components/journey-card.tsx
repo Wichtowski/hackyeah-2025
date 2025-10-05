@@ -153,11 +153,11 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
       </View>
 
       {showActions && (
-        <View style={[styles.actionButtons, compact && styles.compactActions, { borderTopColor: themeColors.blue + '22' }]}>
+        <View style={[styles.actionButtons, compact && styles.compactActions, { borderTopColor: themeColors.pink + '22' }]}>
           {onUseJourney && (
             <TouchableOpacity
               onPress={() => onUseJourney(journey)}
-              style={[styles.useButton, compact && styles.compactUseButton, { backgroundColor: themeColors.blue }]}
+              style={[styles.useButton, compact && styles.compactUseButton, { backgroundColor: themeColors.pink }]}
             >
               <Ionicons name="play" size={compact ? 14 : 16} color={themeColors.text} />
               <Text style={[styles.useButtonText, compact && styles.compactButtonText, { color: themeColors.text }]}>

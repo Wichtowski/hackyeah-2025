@@ -177,7 +177,7 @@ export const StationInput: React.FC<StationInputProps> = ({
                 />
                 {sourceText.length > 0 && (
                   <TouchableOpacity onPress={clearSource} style={styles.clearButton}>
-                    <Ionicons name="close-circle" size={20} color={accent} />
+                    <Ionicons name="close-circle" size={20} color={theme.pink} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -232,7 +232,7 @@ export const StationInput: React.FC<StationInputProps> = ({
                 />
                 {destinationText.length > 0 && (
                   <TouchableOpacity onPress={swapStations} style={styles.swapButton}>
-                    <Ionicons name="swap-vertical" size={20} color={accent} />
+                    <Ionicons name="swap-vertical" size={20} color={theme.pink} />
                   </TouchableOpacity>
                 )}
               </View>

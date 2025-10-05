@@ -1,5 +1,7 @@
 import { apiClient, configureApi, enableApiDebug } from '../../src';
 import type { Server } from 'http';
+import { reportIncident } from '../../src/incidents';
+import { IncidentType } from '../../src/types';
 
 let server: Server;
 let baseUrl: string;
@@ -117,5 +119,20 @@ describe('SDK integration - journeys endpoints', () => {
       expect(err.status).toBe(400);
       expect(typeof err.message).toBe('string');
     }
+  });
+
+  test('report incident then getJourney returns route with incidents (env parity)', async () => {
+    const userId = 'sdk_user_incident_1';
+    // Report an incident for the user via REST. Since public API does not allow
+    // attaching a route reference to the user context, the incident will not
+    // be associated with any origin/destination route in the repository.
+    await reportIncident({ userId, incidentType: IncidentType.DELAY, description: 'SDK integration incident' });
+
+    const journey = await (apiClient as any).getJourney({ station: { name: 'Rondo Matecznego' } }, { station: { name: 'Wawel' } });
+    const route = journey.routes[0];
+
+    // Expect at least one incident on the route. If this fails, it replicates the env issue.
+    expect(Array.isArray(route.incidents)).toBe(true);
+    expect(route.incidents.length).toBeGreaterThan(0);
   });
 });
