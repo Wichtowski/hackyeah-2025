@@ -8,18 +8,6 @@ servers:
   - url: http://localhost:3000/api
 
 paths:
-  /health:
-    get:
-      summary: Health check
-      tags: [Health]
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthBackend'
-
   /incidents:
     post:
       summary: Report a new incident
@@ -37,36 +25,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IncidentReport'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '500':
-          description: Server Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-
-  /mock/location:
-    post:
-      summary: Mock a user's location (demo/testing)
-      tags: [Mock]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MockLocationRequest'
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MockLocationResponse'
         '400':
           description: Bad Request
           content:
@@ -224,13 +182,6 @@ components:
       properties:
         error:
           type: string
-
-    HealthBackend:
-      type: object
-      properties:
-        message:
-          type: string
-      required: [message]
 
     Station:
       type: object
@@ -411,21 +362,6 @@ components:
         description: { type: string }
       required: [userId, incidentType]
 
-    MockLocationRequest:
-      type: object
-      properties:
-        userId: { type: string }
-        longitude: { type: number, format: double }
-        latitude: { type: number, format: double }
-      required: [userId, longitude, latitude]
-
-    MockLocationResponse:
-      type: object
-      properties:
-        message: { type: string }
-        userId: { type: string }
-        longitude: { type: number, format: double }
-        latitude: { type: number, format: double }
-      required: [message, userId, longitude, latitude]
+    
 
 
