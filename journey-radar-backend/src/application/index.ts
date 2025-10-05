@@ -1,4 +1,5 @@
 import express from 'express';
+import cors from 'cors';
 import { JourneyRadarFacade } from '@domain/facade/JourneyRadarFacade';
 import { createHealthRoutes } from '@adapter/rest/incoming/healthRoutes';
 import { createIncidentRoutes } from '@adapter/rest/incoming/incidentRoutes';
@@ -20,6 +21,20 @@ const journeysRouter = createJourneysRoutes(journeyRadarFacade);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const defaultOrigins = ['http://localhost:8081', 'http://localhost:19006'];
+const envOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [];
+const allowedOrigins = [...new Set([...defaultOrigins, ...envOrigins])];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    console.warn(`[CORS] Blocked origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  exposedHeaders: ['x-health-check'],
+}));
+
 app.use(express.json());
 app.use('/api', healthRouter);
 app.use('/api', incidentRouter);
@@ -29,6 +44,7 @@ app.use('/api', journeysRouter);
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`[CORS] Allowed origins: ${allowedOrigins.join(', ')}`);
   });
 }
 
