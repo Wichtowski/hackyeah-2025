@@ -68,7 +68,6 @@ export class JourneyRadarFacade implements JourneyRadarCapabilities {
     return { userId, longitude, latitude };
   }
 
-  // New contract-aligned methods
   async getJourney(origin: Origin, destination: Destination): Promise<Journey> {
     return this.journeyService.computeJourney(origin, destination);
   }
