@@ -24,5 +24,7 @@ exports.apiClient = {
     getJourney: journeys_1.getJourney,
     startJourney: journeys_1.startJourney,
     getJourneyStage: journeys_1.getJourneyStage,
+    getJourneyStageWithUser: journeys_1.getJourneyStageWithUser,
+    getJourneyHistory: journeys_1.getJourneyHistory,
 };
 exports.default = exports.apiClient;
