@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Route, Station, Incident } from '@/types/journey';
+import { Journey, Route, Station, Incident } from '@/types/journey';
 import { useJourney } from '@/contexts/JourneyContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import IncidentReportForm from '@/components/incident-report-form';
 
 const getIncidentIcon = (type: string): keyof typeof MaterialIcons.glyphMap => {
   switch (type) {
@@ -72,11 +73,11 @@ const StationNode: React.FC<{
           )}
         </View>
       </View>
-      
+
       <View style={styles.centerDot}>
         <View style={[styles.stationDot, { backgroundColor: colors.blue }]} />
       </View>
-      
+
       <View style={styles.rightSection} />
     </View>
   );
@@ -119,7 +120,7 @@ const RouteSection: React.FC<{
         const stationIncidents = route.incidents.filter(
           incident => incident.stationId === station.id
         );
-        
+
         const hasIncidentBefore = route.stations.slice(0, index).some((prevStation) =>
           route.incidents.some((incident) => incident.stationId === prevStation.id)
         );
@@ -139,7 +140,7 @@ const RouteSection: React.FC<{
           </View>
         );
       })}
-      
+
       {!isLast && (
         <View style={styles.routeTransition}>
           <View style={styles.leftSection} />
@@ -158,6 +159,12 @@ const RouteSection: React.FC<{
 export default function JourneyScreen(): React.JSX.Element {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+  const [showIncidentForm, setShowIncidentForm] = useState(false);
+
+  const lastRouteStationName =
+    sampleJourney.routes[sampleJourney.routes.length - 1]
+      .stations[sampleJourney.routes[sampleJourney.routes.length - 1].stations.length - 1].name;
+
   const { currentJourney, savedJourneys } = useJourney();
 
   // Use current journey if available, otherwise use the first saved journey as fallback
@@ -206,50 +213,31 @@ export default function JourneyScreen(): React.JSX.Element {
           ))}
         </View>
 
-        <TouchableOpacity style={[styles.reportButton, { backgroundColor: colors.pink }]}>
+        <TouchableOpacity
+          style={[styles.reportButton, { backgroundColor: colors.pink }]}
+          onPress={() => setShowIncidentForm(true)}
+          activeOpacity={0.85}
+        >
           <MaterialIcons name="add" size={24} color="white" />
           <Text style={styles.reportButtonText}>Zgłoś problem</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <IncidentReportForm
+        visible={showIncidentForm}
+        onClose={() => setShowIncidentForm(false)}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  header: {
-    padding: 20,
-    paddingTop: 10,
-  },
-  headerTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    flex: 1,
-    marginLeft: 16,
-  },
-  communityBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  communityText: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 8,
-    letterSpacing: 0.5,
-  },
-  mainTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    lineHeight: 32,
-  },
+  container: { flex: 1 },
+  scrollView: { flex: 1 },
+  header: { padding: 20, paddingTop: 10 },
+  headerTop: { flexDirection: 'row', alignItems: 'flex-start' },
+  headerTitle: { flex: 1, marginLeft: 16 },
+  mainTitle: { fontSize: 24, fontWeight: 'bold', lineHeight: 32 },
   treeContainer: {
     paddingHorizontal: 20,
     paddingVertical: 20,
@@ -263,25 +251,10 @@ const styles = StyleSheet.create({
     bottom: 20,
     width: 4,
   },
-  routeNode: {
-    position: 'relative',
-    marginBottom: 8,
-  },
-  routeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  statusIndicatorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  centerStatusDot: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
+  routeNode: { position: 'relative', marginBottom: 8 },
+  routeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  statusIndicatorRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  centerStatusDot: { alignItems: 'center', justifyContent: 'center', zIndex: 10 },
   statusDot: {
     width: 36,
     height: 36,
@@ -291,21 +264,9 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: 'white',
   },
-  rightStatusSection: {
-    flex: 1,
-    alignItems: 'flex-start',
-    paddingLeft: 16,
-  },
-  leftSection: {
-    flex: 1,
-    alignItems: 'flex-end',
-    paddingRight: 16,
-  },
-  centerDot: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 10,
-  },
+  rightStatusSection: { flex: 1, alignItems: 'flex-start', paddingLeft: 16 },
+  leftSection: { flex: 1, alignItems: 'flex-end', paddingRight: 16 },
+  centerDot: { alignItems: 'center', justifyContent: 'center', zIndex: 10 },
   stationDot: {
     width: 12,
     height: 12,
@@ -313,56 +274,13 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: 'white',
   },
-  stationInfo: {
-    alignItems: 'flex-end',
-  },
-  stationName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
-    textAlign: 'right',
-  },
-  etaContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-  },
-  eta: {
-    fontSize: 12,
-    marginLeft: 4,
-  },
-  rightSection: {
-    flex: 1,
-    alignItems: 'flex-start',
-    paddingLeft: 16,
-  },
-  statusText: {
-    fontSize: 12,
-    textAlign: 'left',
-    maxWidth: 130,
-    marginLeft: 12,
-  },
-  methodContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  methodLine: {
-    width: 40,
-    height: 3,
-  },
-  methodIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginLeft: 8,
-  },
-  routeTransition: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
+  stationInfo: { alignItems: 'flex-end' },
+  stationName: { fontSize: 16, fontWeight: '600', marginBottom: 2, textAlign: 'right' },
+  etaContainer: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  eta: { fontSize: 12, marginLeft: 4 },
+  rightSection: { flex: 1, alignItems: 'flex-start', paddingLeft: 16 },
+  statusText: { fontSize: 12, textAlign: 'left', maxWidth: 130, marginLeft: 12 },
+  routeTransition: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
   transitionIcon: {
     width: 32,
     height: 32,
@@ -381,12 +299,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
   },
-  reportButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
-  },
+  reportButtonText: { color: 'white', fontSize: 16, fontWeight: '600', marginLeft: 8 },
   emptyState: {
     flex: 1,
     justifyContent: 'center',

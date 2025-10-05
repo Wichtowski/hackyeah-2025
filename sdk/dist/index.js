@@ -5,6 +5,7 @@ const httpClient_1 = require("./httpClient");
 Object.defineProperty(exports, "enableApiDebug", { enumerable: true, get: function () { return httpClient_1.enableApiDebug; } });
 Object.defineProperty(exports, "configureApi", { enumerable: true, get: function () { return httpClient_1.configureApi; } });
 const health_1 = require("./health");
+const incidents_1 = require("./incidents");
 // New exports for typed HTTP helpers
 var httpClient_2 = require("./httpClient");
 Object.defineProperty(exports, "apiGet", { enumerable: true, get: function () { return httpClient_2.apiGet; } });
@@ -18,5 +19,6 @@ Object.defineProperty(exports, "isDebugEnabled", { enumerable: true, get: functi
 // Public API client object (backwards compatible with previous shape)
 exports.apiClient = {
     healthCheck: health_1.healthCheck,
+    reportIncident: incidents_1.reportIncident,
 };
 exports.default = exports.apiClient;

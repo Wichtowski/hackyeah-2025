@@ -1,8 +1,33 @@
 import { reportIncident } from '../../src/incidents';
 import { IncidentType, CreateIncidentRequest } from '../../src/types';
+import type { Server } from 'http';
 
 describe('Incidents Integration Tests', () => {
-  const BASE_URL = process.env.API_BASE_URL || 'http://localhost:3000';
+  let server: Server;
+  let BASE_URL: string;
+
+  beforeAll(async () => {
+    process.env.NODE_ENV = 'test';
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const backend = require('../../../journey-radar-backend/dist/index.js');
+    const app = backend.default || backend.app || backend;
+    await new Promise<void>((resolve, reject) => {
+      server = app.listen(0, () => resolve());
+      server.on('error', reject);
+    });
+    const address = server.address();
+    if (address && typeof address === 'object') {
+      BASE_URL = `http://127.0.0.1:${address.port}`;
+    } else {
+      throw new Error('Failed to determine server port');
+    }
+  });
+
+  afterAll(async () => {
+    if (server) {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
+  });
 
   it('should report a new incident with only userId and incidentType', async () => {
     const incidentData: CreateIncidentRequest = {

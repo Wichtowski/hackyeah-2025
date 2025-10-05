@@ -34,7 +34,6 @@ const StopMarker: React.FC<StopMarkerProps> = ({
         align-items: center;
         justify-content: center;
         box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        cursor: pointer;
         transition: all 0.2s ease;
       ">
         <Ionicons name="location" size={16} color={Colors.light.pink} />

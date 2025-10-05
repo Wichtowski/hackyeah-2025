@@ -3,6 +3,7 @@ import { JourneyRadarFacade } from '@domain/facade/JourneyRadarFacade';
 import { createHealthRoutes } from '@adapter/rest/incoming/healthRoutes';
 import { createIncidentRoutes } from '@adapter/rest/incoming/incidentRoutes';
 import { createLocationMockRoutes } from '@adapter/rest/incoming/locationMockRoutes';
+import { createJourneysRoutes } from '@adapter/rest/incoming/journeysRoutes';
 import { InMemoryIncidentReportRepository } from '@adapter/repository/InMemoryIncidentReportRepository';
 import { InMemoryUserLocationRepository } from '@adapter/repository/InMemoryUserLocationRepository';
 import { MockUserContextService } from '@adapter/service/MockUserContextService';
@@ -14,6 +15,7 @@ const journeyRadarFacade = new JourneyRadarFacade(incidentReportRepository, user
 const healthRouter = createHealthRoutes(journeyRadarFacade);
 const incidentRouter = createIncidentRoutes(journeyRadarFacade);
 const locationMockRouter = createLocationMockRoutes(journeyRadarFacade);
+const journeysRouter = createJourneysRoutes(journeyRadarFacade);
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,6 +24,7 @@ app.use(express.json());
 app.use('/api', healthRouter);
 app.use('/api', incidentRouter);
 app.use('/api', locationMockRouter);
+app.use('/api', journeysRouter);
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {

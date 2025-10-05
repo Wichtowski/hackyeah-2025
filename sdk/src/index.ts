@@ -1,6 +1,7 @@
 import { enableApiDebug, configureApi } from './httpClient';
 import { healthCheck } from './health';
 import { reportIncident } from './incidents';
+import { getJourney, startJourney, getJourneyStage } from './journeys';
 export type {
   HealthResult,
   Location,
@@ -10,7 +11,14 @@ export type {
   Reporter,
   IncidentReportDetails,
   CreateIncidentRequest,
-  IncidentReport
+  IncidentReport,
+  ApiClient as ApiClientType,
+  Origin,
+  Destination,
+  Coordinates,
+  Journey,
+  JourneyStartResponse,
+  JourneyProgress,
 } from './types';
 // New exports for typed HTTP helpers
 export {
@@ -25,10 +33,13 @@ export {
   isDebugEnabled,
 } from './httpClient';
 
-// Public API client object (backwards compatible with previous shape)
+// Public API client object (extended)
 export const apiClient = {
   healthCheck,
   reportIncident,
+  getJourney,
+  startJourney,
+  getJourneyStage,
 };
 
 export { enableApiDebug, configureApi };

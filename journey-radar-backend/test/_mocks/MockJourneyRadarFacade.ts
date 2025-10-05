@@ -1,5 +1,6 @@
 import { JourneyRadarCapabilities } from '../../src/domain/facade/JourneyRadarCapabilities';
 import { IncidentReport } from '../../src/domain/model/IncidentReport';
+import { Coordinates, Destination, Journey, JourneyProgress, JourneyStartResponse, Origin } from '../../src/domain/model/Journey';
 
 export type CallRecord = {
   method: keyof JourneyRadarCapabilities;
@@ -54,5 +55,40 @@ export class MockJourneyRadarFacade implements JourneyRadarCapabilities {
   async mockUserLocation(userId: string, longitude: number, latitude: number): Promise<{ userId: string; longitude: number; latitude: number }> {
     this.recordCall('mockUserLocation', [userId, longitude, latitude]);
     return Promise.resolve({ userId, longitude, latitude });
+  }
+
+  // New contract-aligned methods
+  async getJourney(origin: Origin, destination: Destination): Promise<Journey> {
+    this.recordCall('getJourney', [origin, destination]);
+    return Promise.resolve({
+      routes: [
+        { stations: [origin.station, destination.station], delay: { time: 0 }, incidents: [] }
+      ],
+      distance: 0,
+      duration: 0
+    });
+  }
+
+  async startJourney(journey: Journey): Promise<JourneyStartResponse> {
+    this.recordCall('startJourney', [journey]);
+    return Promise.resolve({
+      journey_id: 'mock_journey_id',
+      state: { route_index: 0, position_in_route: 0, updated_at: new Date().toISOString() }
+    });
+  }
+
+  async getJourneyProgress(journeyId: string, coordinates: Coordinates): Promise<JourneyProgress> {
+    this.recordCall('getJourneyProgress', [journeyId, coordinates]);
+    const stations = [{ name: 'A' }, { name: 'B' }];
+    return Promise.resolve({
+      journeyId,
+      routes: [
+        { stations, delay: { time: 0 }, incidents: [] }
+      ],
+      progress: { currentRoute: 0, currentStage: 0, currentConnection: { id: 1, from: stations[0], to: stations[1] } },
+      delay: { time: 0 },
+      firstStation: stations[0],
+      lastStation: stations[1]
+    });
   }
 }
