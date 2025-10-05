@@ -128,6 +128,15 @@ export interface JourneyProgress {
     lastStation: Station
 }
 
+export interface FinishedJourney {
+    userId: string;
+    journeyId: string;
+    from: { name: string };
+    to: { name: string };
+    startedAt: string;
+    finishedAt: string;
+}
+
 // -------------------- ApiClient Contract --------------------
 
 export interface ApiClient {
@@ -138,4 +147,6 @@ export interface ApiClient {
     getJourneyStage(journeyId: string, coordinates: Coordinates): Promise<JourneyProgress>;
 
     healthCheck(): Promise<HealthResult>;
+
+    getJourneyHistory(userId: string): Promise<FinishedJourney[]>;
 }

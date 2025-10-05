@@ -1,6 +1,7 @@
 import { JourneyRadarCapabilities } from '../../src/domain/facade/JourneyRadarCapabilities';
 import { IncidentReport } from '../../src/domain/model/IncidentReport';
 import { Coordinates, Destination, Journey, JourneyProgress, JourneyStartResponse, Origin } from '../../src/domain/model/Journey';
+import { FinishedJourney } from '../../src/domain/model/FinishedJourney';
 
 export type CallRecord = {
   method: keyof JourneyRadarCapabilities;
@@ -77,8 +78,8 @@ export class MockJourneyRadarFacade implements JourneyRadarCapabilities {
     });
   }
 
-  async getJourneyProgress(journeyId: string, coordinates: Coordinates): Promise<JourneyProgress> {
-    this.recordCall('getJourneyProgress', [journeyId, coordinates]);
+  async getJourneyProgress(journeyId: string, coordinates: Coordinates, userId?: string): Promise<JourneyProgress> {
+    this.recordCall('getJourneyProgress', [journeyId, coordinates, userId]);
     const stations = [{ name: 'A' }, { name: 'B' }];
     return Promise.resolve({
       journeyId,
@@ -90,5 +91,10 @@ export class MockJourneyRadarFacade implements JourneyRadarCapabilities {
       firstStation: stations[0],
       lastStation: stations[1]
     });
+  }
+
+  async getFinishedJourneys(userId: string): Promise<FinishedJourney[]> {
+    this.recordCall('getFinishedJourneys', [userId]);
+    return Promise.resolve([]);
   }
 }

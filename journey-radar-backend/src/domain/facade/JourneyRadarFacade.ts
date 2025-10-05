@@ -7,8 +7,12 @@ import { Coordinates, Destination, Journey, JourneyProgress, JourneyStartRespons
 import { JourneyService } from '../service/JourneyService';
 import { JourneyProgressService } from '../service/JourneyProgressService';
 import { JourneyProgressRepository } from '../repository/JourneyProgressRepository';
+import { FinishedJourneyRepository } from '../repository/FinishedJourneyRepository';
+import { FinishedJourney } from '../model/FinishedJourney';
 
 const sessions: Map<string, Journey> = new Map();
+const journeyIdToStartedAt: Map<string, string> = new Map();
+const journeyIdToUserId: Map<string, string> = new Map();
 
 class InMemoryProgressRepository implements JourneyProgressRepository {
   private readonly journeyIdToProgresses: Map<string, JourneyProgress[]> = new Map();
@@ -42,6 +46,7 @@ export class JourneyRadarFacade implements JourneyRadarCapabilities {
     private readonly userContextService: UserContextService,
     private readonly userLocationRepository: UserLocationRepository,
     journeyProgressRepository?: JourneyProgressRepository,
+    private readonly finishedJourneyRepository?: FinishedJourneyRepository,
     private readonly journeyService: JourneyService = new JourneyService()
   ) {
     const repo = journeyProgressRepository ?? new InMemoryProgressRepository();
@@ -114,16 +119,55 @@ export class JourneyRadarFacade implements JourneyRadarCapabilities {
   async startJourney(journey: Journey): Promise<JourneyStartResponse> {
     const journeyId = `journey-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     sessions.set(journeyId, journey);
-    const state = { route_index: 0, position_in_route: 0, updated_at: new Date().toISOString() };
+    const startedAt = new Date().toISOString();
+    journeyIdToStartedAt.set(journeyId, startedAt);
+    const state = { route_index: 0, position_in_route: 0, updated_at: startedAt };
     return { journey_id: journeyId, state };
   }
 
-  async getJourneyProgress(journeyId: string, coordinates: Coordinates): Promise<JourneyProgress> {
+  async getJourneyProgress(journeyId: string, coordinates: Coordinates, userId?: string): Promise<JourneyProgress> {
     const journey = sessions.get(journeyId);
     if (!journey) {
       const empty = this.journeyService.computeJourney({ station: { name: 'Unknown' } }, { station: { name: 'Unknown' } });
       return await this.journeyProgressService.computeProgress(empty, coordinates, journeyId);
     }
-    return await this.journeyProgressService.computeProgress(journey, coordinates, journeyId);
+    const progress = await this.journeyProgressService.computeProgress(journey, coordinates, journeyId);
+
+    // Persist finished journey if reached destination and repository available
+    try {
+      const isAtFinalConnection = progress.progress.currentConnection.to.name === progress.lastStation.name;
+      if (isAtFinalConnection && this.finishedJourneyRepository) {
+        if (userId) {
+          journeyIdToUserId.set(journeyId, userId);
+        }
+        const effectiveUserId = userId || journeyIdToUserId.get(journeyId);
+        if (effectiveUserId) {
+          const finished: FinishedJourney = {
+            userId: effectiveUserId,
+            journeyId,
+            from: progress.firstStation,
+            to: progress.lastStation,
+            startedAt: journeyIdToStartedAt.get(journeyId) || new Date().toISOString(),
+            finishedAt: new Date().toISOString(),
+          };
+          await this.finishedJourneyRepository.save(finished);
+          // cleanup
+          sessions.delete(journeyId);
+          journeyIdToUserId.delete(journeyId);
+          journeyIdToStartedAt.delete(journeyId);
+        }
+      }
+    } catch (e) {
+      // Non-fatal; history persistence should not break progress checks
+      // eslint-disable-next-line no-console
+      console.warn('History persistence failed:', e);
+    }
+
+    return progress;
+  }
+
+  async getFinishedJourneys(userId: string): Promise<FinishedJourney[]> {
+    if (!this.finishedJourneyRepository) return [];
+    return this.finishedJourneyRepository.findByUserId(userId);
   }
 }

@@ -35,11 +35,11 @@ function createJourneysRoutes(facade) {
             return res.status(500).json({ error: 'Failed to start journey' });
         }
     });
-    // GET /journeys/:journeyId/progress?longitude=&latitude=
+    // GET /journeys/:journeyId/progress?longitude=&latitude=&userId=
     router.get('/journeys/:journeyId/progress', async (req, res) => {
         try {
             const { journeyId } = req.params;
-            const { longitude, latitude } = req.query;
+            const { longitude, latitude, userId } = req.query;
             if (longitude == null || latitude == null) {
                 return res.status(400).json({ error: 'Both longitude and latitude are required' });
             }
@@ -48,12 +48,27 @@ function createJourneysRoutes(facade) {
             if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
                 return res.status(400).json({ error: 'Longitude and latitude must be valid numbers' });
             }
-            const progress = await facade.getJourneyProgress(journeyId, { longitude: lon, latitude: lat });
+            const progress = await facade.getJourneyProgress(journeyId, { longitude: lon, latitude: lat }, userId);
             return res.status(200).json(progress);
         }
         catch (error) {
             console.error('Error in GET /journeys/:journeyId/progress:', error);
             return res.status(500).json({ error: 'Failed to get journey progress' });
+        }
+    });
+    // GET /journeys/history/:userId
+    router.get('/journeys/history/:userId', async (req, res) => {
+        try {
+            const { userId } = req.params;
+            if (!userId || userId.trim().length === 0) {
+                return res.status(400).json({ error: 'Valid userId is required' });
+            }
+            const history = await facade.getFinishedJourneys(userId);
+            return res.status(200).json(history);
+        }
+        catch (error) {
+            console.error('Error in GET /journeys/history/:userId:', error);
+            return res.status(500).json({ error: 'Failed to get journey history' });
         }
     });
     return router;

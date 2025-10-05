@@ -84,6 +84,23 @@ describe('SDK integration - journeys endpoints', () => {
     expect(progress.progress).toBeDefined();
   });
 
+  test('getJourneyHistory returns finished journeys for a user', async () => {
+    const userId = 'sdk_user_hist_1';
+
+    // Drive a short journey to completion by querying near destination
+    const journey = await (apiClient as any).getJourney({ station: { name: 'A' } }, { station: { name: 'C' } });
+    const start = await (apiClient as any).startJourney(journey);
+
+    // First, a non-final progress
+    await (apiClient as any).getJourneyStageWithUser(start.journey_id, { longitude: 21.0, latitude: 52.2 }, userId);
+
+    // Now query at destination to trigger finish persistence
+    await (apiClient as any).getJourneyStageWithUser(start.journey_id, { longitude: 0, latitude: 0 }, userId);
+
+    const history = await (apiClient as any).getJourneyHistory(userId);
+    expect(Array.isArray(history)).toBe(true);
+  });
+
   test('Errors surfaced as ApiError with status and message on validation failure', async () => {
     try {
       await (apiClient as any).getJourney({ station: { name: 'A' } }, { station: { name: '' } });

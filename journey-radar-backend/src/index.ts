@@ -9,6 +9,7 @@ import { createIncidentRoutes } from '@adapter/rest/incoming/incidentRoutes';
 import { createLocationMockRoutes } from '@adapter/rest/incoming/locationMockRoutes';
 import { createJourneysRoutes } from '@adapter/rest/incoming/journeysRoutes';
 import { InMemoryJourneyProgressRepository } from '@adapter/repository/InMemoryJourneyProgressRepository';
+import { InMemoryFinishedJourneyRepository } from '@adapter/repository/InMemoryFinishedJourneyRepository';
 
 const app = express();
 const port = 3000;
@@ -37,7 +38,8 @@ const incidentReportRepository = new InMemoryIncidentReportRepository();
 const userLocationRepository = new InMemoryUserLocationRepository();
 const userContextService = new MockUserContextService(userLocationRepository);
 const journeyProgressRepository = new InMemoryJourneyProgressRepository();
-const journeyRadarFacade = new JourneyRadarFacade(incidentReportRepository, userContextService, userLocationRepository, journeyProgressRepository);
+const finishedJourneyRepository = new InMemoryFinishedJourneyRepository();
+const journeyRadarFacade = new JourneyRadarFacade(incidentReportRepository, userContextService, userLocationRepository, journeyProgressRepository, finishedJourneyRepository);
 
 app.use('/api', healthRouter); // legacy health route shape expected by SDK tests
 app.use('/api', createIncidentRoutes(journeyRadarFacade));

@@ -1,7 +1,7 @@
 import { enableApiDebug, configureApi } from './httpClient';
 import { healthCheck } from './health';
 import { reportIncident } from './incidents';
-import { getJourney, startJourney, getJourneyStage } from './journeys';
+import { getJourney, startJourney, getJourneyStage, getJourneyStageWithUser, getJourneyHistory } from './journeys';
 export type {
   HealthResult,
   Location,
@@ -19,6 +19,7 @@ export type {
   Journey,
   JourneyStartResponse,
   JourneyProgress,
+  FinishedJourney,
 } from './types';
 // New exports for typed HTTP helpers
 export {
@@ -40,6 +41,8 @@ export const apiClient = {
   getJourney,
   startJourney,
   getJourneyStage,
+  getJourneyStageWithUser,
+  getJourneyHistory,
 };
 
 export { enableApiDebug, configureApi };
