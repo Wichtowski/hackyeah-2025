@@ -71,11 +71,10 @@ class JourneyRadarFacade {
     async getJourneyProgress(journeyId, coordinates) {
         const journey = sessions.get(journeyId);
         if (!journey) {
-            // Minimal behavior for tests; in routes we will map to 400/404 as needed
             const empty = this.journeyService.computeJourney({ station: { name: 'Unknown' } }, { station: { name: 'Unknown' } });
-            return this.journeyProgressService.computeProgress(empty, coordinates);
+            return this.journeyProgressService.computeProgress(empty, coordinates, journeyId);
         }
-        return this.journeyProgressService.computeProgress(journey, coordinates);
+        return this.journeyProgressService.computeProgress(journey, coordinates, journeyId);
     }
 }
 exports.JourneyRadarFacade = JourneyRadarFacade;

@@ -16,7 +16,7 @@ type JourneyStartState = { route_index: number; position_in_route: number; updat
 type JourneyStartResponse = { journey_id: string; state: JourneyStartState };
 type Coordinates = { longitude: number; latitude: number };
 type Progress = { currentRoute: number; currentStage: number; currentConnection: Connection };
-type JourneyProgress = { routes: Route[]; progress: Progress; delay: Delay; firstStation: Station; lastStation: Station };
+type JourneyProgress = { journeyId: string; routes: Route[]; progress: Progress; delay: Delay; firstStation: Station; lastStation: Station };
 
 describe('Journey Facade Capabilities', () => {
   let facade: JourneyRadarCapabilities & {
@@ -62,7 +62,7 @@ describe('Journey Facade Capabilities', () => {
     expect(new Date(response.state.updated_at).toISOString()).toBe(response.state.updated_at);
   });
 
-  it('getJourneyProgress returns JourneyProgress with first/last stations', async () => {
+  it('getJourneyProgress returns JourneyProgress with journeyId and first/last stations', async () => {
     const journey: Journey = {
       routes: [
         { stations: [{ name: 'A' }, { name: 'B' }], delay: { time: 2 }, incidents: [] },
@@ -76,6 +76,7 @@ describe('Journey Facade Capabilities', () => {
 
     const progress = await facade.getJourneyProgress(start.journey_id, { longitude: 0, latitude: 0 });
 
+    expect(progress.journeyId).toBe(start.journey_id);
     expect(progress.firstStation.name).toBe('A');
     expect(progress.lastStation.name).toBe('C');
     expect(typeof progress.progress.currentRoute).toBe('number');

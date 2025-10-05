@@ -67,8 +67,9 @@ describe('Journey Domain Behavior', () => {
     expect(progress.currentConnection.to.name).toBe('B');
   });
 
-  it('JourneyProgress exposes firstStation and lastStation', async () => {
+  it('JourneyProgress exposes journeyId, firstStation and lastStation', async () => {
     const journeyProgress = {
+      journeyId: 'journey_test',
       routes: [
         { stations: [{ name: 'A' }, { name: 'B' }], delay: { time: 2 }, incidents: [] },
         { stations: [{ name: 'B' }, { name: 'C' }], delay: { time: 3 }, incidents: [] }
@@ -79,6 +80,7 @@ describe('Journey Domain Behavior', () => {
       lastStation: { name: 'C' }
     };
 
+    expect(journeyProgress.journeyId).toBe('journey_test');
     expect(journeyProgress.firstStation.name).toBe('A');
     expect(journeyProgress.lastStation.name).toBe('C');
     expect(journeyProgress.delay.time).toBe(5);

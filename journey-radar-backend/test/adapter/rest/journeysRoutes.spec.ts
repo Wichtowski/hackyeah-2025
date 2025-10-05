@@ -78,6 +78,7 @@ describe('Journeys Routes', () => {
         .query({ longitude: '21.0', latitude: '52.2' })
         .expect(200);
 
+      expect(response.body.journeyId).toBe('journey_1');
       expect(response.body.firstStation).toBeDefined();
       expect(response.body.lastStation).toBeDefined();
       expect(response.body.progress).toBeDefined();

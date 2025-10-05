@@ -39,4 +39,4 @@ export interface JourneyStartState { route_index: number; position_in_route: num
 export interface JourneyStartResponse { journey_id: string; state: JourneyStartState }
 
 export interface Progress { currentRoute: number; currentStage: number; currentConnection: Connection }
-export interface JourneyProgress { routes: Route[]; progress: Progress; delay: Delay; firstStation: Station; lastStation: Station }
+export interface JourneyProgress { journeyId: string; routes: Route[]; progress: Progress; delay: Delay; firstStation: Station; lastStation: Station }

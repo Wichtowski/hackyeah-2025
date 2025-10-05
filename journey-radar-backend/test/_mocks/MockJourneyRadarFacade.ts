@@ -81,6 +81,7 @@ export class MockJourneyRadarFacade implements JourneyRadarCapabilities {
     this.recordCall('getJourneyProgress', [journeyId, coordinates]);
     const stations = [{ name: 'A' }, { name: 'B' }];
     return Promise.resolve({
+      journeyId,
       routes: [
         { stations, delay: { time: 0 }, incidents: [] }
       ],

@@ -78,6 +78,7 @@ describe('SDK integration - journeys endpoints', () => {
     const start = await (apiClient as any).startJourney(journey);
     const progress = await (apiClient as any).getJourneyStage(start.journey_id, { longitude: 21.0, latitude: 52.2 });
 
+    expect(progress.journeyId).toBe(start.journey_id);
     expect(progress.firstStation).toBeDefined();
     expect(progress.lastStation).toBeDefined();
     expect(progress.progress).toBeDefined();

@@ -1,7 +1,7 @@
 import { Coordinates, Journey, JourneyProgress, Progress } from '../model/Journey';
 
 export class JourneyProgressService {
-  computeProgress(journey: Journey, _coordinates: Coordinates): JourneyProgress {
+  computeProgress(journey: Journey, _coordinates: Coordinates, journeyId: string): JourneyProgress {
     const firstRoute = journey.routes[0];
     const lastRoute = journey.routes[journey.routes.length - 1];
 
@@ -17,6 +17,7 @@ export class JourneyProgressService {
     const aggregatedDelayTime = journey.routes.reduce((acc, r) => acc + r.delay.time, 0);
 
     return {
+      journeyId,
       routes: journey.routes,
       progress,
       delay: { time: aggregatedDelayTime },
