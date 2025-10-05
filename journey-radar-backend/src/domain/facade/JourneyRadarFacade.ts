@@ -6,17 +6,47 @@ import { UserLocationRepository } from '../repository/UserLocationRepository';
 import { Coordinates, Destination, Journey, JourneyProgress, JourneyStartResponse, Origin } from '../model/Journey';
 import { JourneyService } from '../service/JourneyService';
 import { JourneyProgressService } from '../service/JourneyProgressService';
+import { JourneyProgressRepository } from '../repository/JourneyProgressRepository';
 
 const sessions: Map<string, Journey> = new Map();
 
+class InMemoryProgressRepository implements JourneyProgressRepository {
+  private readonly journeyIdToProgresses: Map<string, JourneyProgress[]> = new Map();
+
+  async save(progress: JourneyProgress): Promise<void> {
+    const list = this.journeyIdToProgresses.get(progress.journeyId) ?? [];
+    list.push(progress);
+    this.journeyIdToProgresses.set(progress.journeyId, list);
+  }
+
+  async findByJourneyId(journeyId: string): Promise<JourneyProgress | undefined> {
+    const list = this.journeyIdToProgresses.get(journeyId);
+    if (!list || list.length === 0) return undefined;
+    return list[list.length - 1];
+  }
+
+  async findAll(): Promise<JourneyProgress[]> {
+    const all: JourneyProgress[] = [];
+    for (const list of this.journeyIdToProgresses.values()) {
+      all.push(...list);
+    }
+    return all;
+  }
+}
+
 export class JourneyRadarFacade implements JourneyRadarCapabilities {
+  private readonly journeyProgressService: JourneyProgressService;
+
   constructor(
     private readonly incidentReportRepository: IncidentReportRepository,
     private readonly userContextService: UserContextService,
     private readonly userLocationRepository: UserLocationRepository,
-    private readonly journeyService: JourneyService = new JourneyService(),
-    private readonly journeyProgressService: JourneyProgressService = new JourneyProgressService()
-  ) {}
+    journeyProgressRepository?: JourneyProgressRepository,
+    private readonly journeyService: JourneyService = new JourneyService()
+  ) {
+    const repo = journeyProgressRepository ?? new InMemoryProgressRepository();
+    this.journeyProgressService = new JourneyProgressService(repo);
+  }
 
   async planJourney(params: { origin: string; destination: string }): Promise<any> {
     console.log(`Domain: Planning journey from ${params.origin} to ${params.destination}...`);
@@ -92,8 +122,8 @@ export class JourneyRadarFacade implements JourneyRadarCapabilities {
     const journey = sessions.get(journeyId);
     if (!journey) {
       const empty = this.journeyService.computeJourney({ station: { name: 'Unknown' } }, { station: { name: 'Unknown' } });
-      return this.journeyProgressService.computeProgress(empty, coordinates, journeyId);
+      return await this.journeyProgressService.computeProgress(empty, coordinates, journeyId);
     }
-    return this.journeyProgressService.computeProgress(journey, coordinates, journeyId);
+    return await this.journeyProgressService.computeProgress(journey, coordinates, journeyId);
   }
 }

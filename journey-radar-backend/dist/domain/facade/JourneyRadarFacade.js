@@ -5,18 +5,40 @@ const IncidentReport_1 = require("../model/IncidentReport");
 const JourneyService_1 = require("../service/JourneyService");
 const JourneyProgressService_1 = require("../service/JourneyProgressService");
 const sessions = new Map();
+class InMemoryProgressRepository {
+    journeyIdToProgresses = new Map();
+    async save(progress) {
+        const list = this.journeyIdToProgresses.get(progress.journeyId) ?? [];
+        list.push(progress);
+        this.journeyIdToProgresses.set(progress.journeyId, list);
+    }
+    async findByJourneyId(journeyId) {
+        const list = this.journeyIdToProgresses.get(journeyId);
+        if (!list || list.length === 0)
+            return undefined;
+        return list[list.length - 1];
+    }
+    async findAll() {
+        const all = [];
+        for (const list of this.journeyIdToProgresses.values()) {
+            all.push(...list);
+        }
+        return all;
+    }
+}
 class JourneyRadarFacade {
     incidentReportRepository;
     userContextService;
     userLocationRepository;
     journeyService;
     journeyProgressService;
-    constructor(incidentReportRepository, userContextService, userLocationRepository, journeyService = new JourneyService_1.JourneyService(), journeyProgressService = new JourneyProgressService_1.JourneyProgressService()) {
+    constructor(incidentReportRepository, userContextService, userLocationRepository, journeyProgressRepository, journeyService = new JourneyService_1.JourneyService()) {
         this.incidentReportRepository = incidentReportRepository;
         this.userContextService = userContextService;
         this.userLocationRepository = userLocationRepository;
         this.journeyService = journeyService;
-        this.journeyProgressService = journeyProgressService;
+        const repo = journeyProgressRepository ?? new InMemoryProgressRepository();
+        this.journeyProgressService = new JourneyProgressService_1.JourneyProgressService(repo);
     }
     async planJourney(params) {
         console.log(`Domain: Planning journey from ${params.origin} to ${params.destination}...`);
@@ -72,9 +94,9 @@ class JourneyRadarFacade {
         const journey = sessions.get(journeyId);
         if (!journey) {
             const empty = this.journeyService.computeJourney({ station: { name: 'Unknown' } }, { station: { name: 'Unknown' } });
-            return this.journeyProgressService.computeProgress(empty, coordinates, journeyId);
+            return await this.journeyProgressService.computeProgress(empty, coordinates, journeyId);
         }
-        return this.journeyProgressService.computeProgress(journey, coordinates, journeyId);
+        return await this.journeyProgressService.computeProgress(journey, coordinates, journeyId);
     }
 }
 exports.JourneyRadarFacade = JourneyRadarFacade;
