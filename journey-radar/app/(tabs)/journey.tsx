@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Dim
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import {Route, Station, Journey as AppJourney, CommunicationMethod, Journey} from '@/types/journey';
+import {Route, Station, Journey as AppJourney, CommunicationMethod, Journey, Incident} from '@/types/journey';
 import { useJourney } from '@/contexts/JourneyContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import IncidentReportForm from '@/components/incident-report-form';
@@ -35,10 +35,15 @@ const transformSdkJourneyToAppJourney = (
       incidents: route.incidents.map((incident, incidentIndex) => ({
         id: `incident_${journeyId}_${routeIndex}_${incidentIndex}`,
         stationId: `station_${journeyId}_${routeIndex}_${route.stations.indexOf(incident.connection.from)}`,
-        position: { longitude: 0, latitude: 0 }, // SDK doesn't provide position for incidents
+        position: { longitude: 0, latitude: 0 },
         description: incident.type,
         severity: incident.severity,
         type: incident.type,
+        connection: {
+          from: { id: `station_${journeyId}_${routeIndex}_${route.stations.indexOf(incident.connection.from)}`, name: incident.connection.from.name },
+          to: { id: `station_${journeyId}_${routeIndex}_${route.stations.indexOf(incident.connection.to)}`, name: incident.connection.to.name },
+          id: `${incident.connection.id}`,
+        },
       })),
       communicationMethod: 'train' as CommunicationMethod, // SDK doesn't provide this, defaulting to train
       duration: sdkJourney.durationInSeconds / sdkJourney.routes.length, // Distribute duration evenly
@@ -174,19 +179,23 @@ const RouteSection: React.FC<{
   isLast: boolean;
   colors: typeof Colors.light;
   onStationPress?: (station: Station) => void;
-}> = ({ route, isLast, colors, onStationPress }) => {
+  currentConnection?: { from: string; to: string } | null;
+  userPosition?: { from: string; to: string; fraction: number } | null;
+}> = ({ route, isLast, colors, onStationPress, currentConnection, userPosition }) => {
   const methodIcon = getCommunicationMethodIcon(route.communicationMethod);
 
   return (
     <View style={styles.routeNode}>
       {route.stations.map((station, index) => {
         const stationIncidents = route.incidents.filter(
-          incident => incident.stationId === station.id
+          incident => incident.connection.from.name === station.name
         );
 
         const hasIncidentBefore = route.stations.slice(0, index).some((prevStation) =>
-          route.incidents.some((incident) => incident.stationId === prevStation.id)
+          route.incidents.some((incident) => incident.connection.from.name === prevStation.name)
         );
+
+        const isCurrent = currentConnection && (station.name === currentConnection.from || station.name === currentConnection.to);
 
         return (
           <View key={station.id}>
@@ -195,6 +204,7 @@ const RouteSection: React.FC<{
               delay={hasIncidentBefore ? route.delay : undefined}
               colors={colors}
               onPress={() => onStationPress?.(station)}
+              isCurrent={!!isCurrent}
             />
             {index < route.stations.length - 1 && stationIncidents.length > 0 && (
               stationIncidents.map(incident => (
@@ -231,6 +241,10 @@ export default function JourneyScreen(): React.JSX.Element {
   const [incidentConfirmMessage, setIncidentConfirmMessage] = useState<string | null>(null);
   const [showIncidentThanksModal, setShowIncidentThanksModal] = useState(false);
   const [incidentPromptEnabled, setIncidentPromptEnabled] = useState(false); // feature flag (disabled by default)
+  const [backendJourneyId, setBackendJourneyId] = useState<string | null>(null);
+  const [journeyProgress, setJourneyProgress] = useState<JourneyProgress | null>(null);
+  const [userCoordinates, setUserCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
+  const journeyStartRequestedRef = useRef(false);
   const { currentJourney, savedJourneys, setCurrentJourney, addFavoriteJourney, removeFavoriteJourney, isFavorite } = useJourney();
   const { setSelectedMapStation, sourceStation, destinationStation } = useRoute();
   const router = useRouter();
@@ -514,109 +528,8 @@ useEffect(() => {
                 destinationStation
               );
 
-              const updateJourney2 = {
-    "routes": [
-        {
-            "stations": [
-                {
-                    "name": "Wawel"
-                },
-                {
-                    "name": "Stradom"
-                },
-                {
-                    "name": "Stary Kleparz"
-                },
-                {
-                    "name": "Starowiślna"
-                },
-                {
-                    "name": "Św. Wawrzyńca"
-                },
-                {
-                    "name": "Politechnika"
-                },
-                {
-                    "name": "Lubicz"
-                },
-                {
-                    "name": "Rondo Grzegórzeckie"
-                },
-                {
-                    "name": "Teatr Variété"
-                },
-                {
-                    "name": "Fabryczna"
-                },
-                {
-                    "name": "Białucha"
-                },
-                {
-                    "name": "TAURON Arena Kraków al. Pokoju"
-                },
-                {
-                    "name": "AKF / PK"
-                },
-                {
-                    "name": "Akademia Kultury Fizycznej"
-                }
-            ],
-            "delay": {
-                "time": 0
-            },
-            "incidents": [
-                {
-                    "connection": {
-                        "id": 13,
-                        "from": {
-                            "name": "AKF / PK"
-                        },
-                        "to": {
-                            "name": "Akademia Kultury Fizycznej"
-                        }
-                    }
-                },
-                {
-                    "connection": {
-                        "id": 13,
-                        "from": {
-                            "name": "AKF / PK"
-                        },
-                        "to": {
-                            "name": "Akademia Kultury Fizycznej"
-                        }
-                    }
-                },
-                {
-                    "connection": {
-                        "id": 13,
-                        "from": {
-                            "name": "AKF / PK"
-                        },
-                        "to": {
-                            "name": "Akademia Kultury Fizycznej"
-                        }
-                    }
-                },
-                {
-                    "connection": {
-                        "id": 13,
-                        "from": {
-                            "name": "AKF / PK"
-                        },
-                        "to": {
-                            "name": "Akademia Kultury Fizycznej"
-                        }
-                    }
-                }
-            ]
-        }
-    ],
-    "distance": 12.011,
-    "duration": 36
-} as Journey;
-
-              setCurrentJourney(updateJourney2);
+              
+              setCurrentJourney(updatedJourney);
               console.log('Journey reloaded with new incidents');
             } else {
               console.warn('Cannot reload journey: source or destination station not available');
