@@ -159,8 +159,8 @@ export const JourneyCard: React.FC<JourneyCardProps> = ({
               onPress={() => onUseJourney(journey)}
               style={[styles.useButton, compact && styles.compactUseButton, { backgroundColor: themeColors.blue }]}
             >
-              <Ionicons name="play" size={compact ? 14 : 16} color={themeColors.background} />
-              <Text style={[styles.useButtonText, compact && styles.compactButtonText, { color: themeColors.background }]}>
+              <Ionicons name="play" size={compact ? 14 : 16} color={themeColors.text} />
+              <Text style={[styles.useButtonText, compact && styles.compactButtonText, { color: themeColors.text }]}>
                 Użyj Podróży
               </Text>
             </TouchableOpacity>
