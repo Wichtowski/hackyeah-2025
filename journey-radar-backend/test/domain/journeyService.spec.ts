@@ -5,14 +5,14 @@ import { HARDCODED_STOPS } from '../../src/domain/model/hardcodedStops';
 describe('JourneyService.computeJourney', () => {
   const service = new JourneyService();
 
-  it('computes a journey based on source and destination hardcoded stops', () => {
+  it('computes a journey based on source and destination hardcoded stops', async () => {
     const originName = 'Rondo Matecznego';
     const destinationName = 'Wawel';
 
     const origin = { station: { name: originName } } as const;
     const destination = { station: { name: destinationName } } as const;
 
-    const journey: Journey = service.computeJourney(origin, destination);
+    const journey: Journey = await service.computeJourney(origin, destination);
 
     expect(Array.isArray(journey.routes)).toBe(true);
     expect(journey.routes.length).toBeGreaterThanOrEqual(1);
@@ -32,14 +32,14 @@ describe('JourneyService.computeJourney', () => {
     expect(journey.duration).toBeGreaterThan(0);
   });
 
-  it('computes a journey with many intermediate stops (west to east corridor)', () => {
+  it('computes a journey with many intermediate stops (west to east corridor)', async () => {
     const originName = 'Bronowice Małe';
     const destinationName = 'Kombinat';
 
     const origin = { station: { name: originName } } as const;
     const destination = { station: { name: destinationName } } as const;
 
-    const journey: Journey = service.computeJourney(origin, destination);
+    const journey: Journey = await service.computeJourney(origin, destination);
 
     expect(journey.routes.length).toBeGreaterThanOrEqual(1);
     const route = journey.routes[0];
@@ -54,14 +54,14 @@ describe('JourneyService.computeJourney', () => {
     expect(names.every(n => hardcodedSet.has(n))).toBe(true);
   });
 
-  it('computes a journey with many intermediate stops (north to south corridor)', () => {
+  it('computes a journey with many intermediate stops (north to south corridor)', async () => {
     const originName = 'Górka Narodowa P+R';
     const destinationName = 'Nowy Bieżanów P+R';
 
     const origin = { station: { name: originName } } as const;
     const destination = { station: { name: destinationName } } as const;
 
-    const journey: Journey = service.computeJourney(origin, destination);
+    const journey: Journey = await service.computeJourney(origin, destination);
 
     expect(journey.routes.length).toBeGreaterThanOrEqual(1);
     const route = journey.routes[0];
@@ -74,14 +74,14 @@ describe('JourneyService.computeJourney', () => {
     expect(names.every(n => hardcodedSet.has(n))).toBe(true);
   });
 
-  it('computes a journey with many intermediate stops (northeast to southwest corridor)', () => {
+  it('computes a journey with many intermediate stops (northeast to southwest corridor)', async () => {
     const originName = 'Mistrzejowice';
     const destinationName = 'Czerwone Maki P+R';
 
     const origin = { station: { name: originName } } as const;
     const destination = { station: { name: destinationName } } as const;
 
-    const journey: Journey = service.computeJourney(origin, destination);
+    const journey: Journey = await service.computeJourney(origin, destination);
 
     expect(journey.routes.length).toBeGreaterThanOrEqual(1);
     const route = journey.routes[0];

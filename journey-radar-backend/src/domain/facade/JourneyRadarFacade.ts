@@ -32,7 +32,7 @@ export class JourneyRadarFacade implements JourneyRadarCapabilities {
     private readonly userLocationRepository: UserLocationRepository,
     journeyProgressRepository?: JourneyProgressRepository,
     private readonly finishedJourneyRepository?: FinishedJourneyRepository,
-    private readonly journeyService: JourneyService = new JourneyService()
+    private readonly journeyService: JourneyService = new JourneyService(incidentReportRepository)
   ) {
     const repo = journeyProgressRepository ?? new InMemoryJourneyProgressRepository();
     this.journeyProgressService = new JourneyProgressService(repo);
@@ -52,7 +52,39 @@ export class JourneyRadarFacade implements JourneyRadarCapabilities {
   }
 
   async reportIncident(userId: string, incidentType: string, description?: string): Promise<IncidentReport> {
-    return this.incidentReportingService.reportIncident(userId, incidentType, description);
+    const saved = await this.incidentReportingService.reportIncident(userId, incidentType, description);
+
+    // If incident is tied to a route, update all active journeys matching that route
+    const routeRef = saved.details.reportedOnRoute;
+    if (routeRef) {
+      const sessions = this.journeySessionService.getAllSessions();
+      for (const { journeyId, journey } of sessions) {
+        // Determine if any route in journey matches the origin/destination by names
+        const matches = journey.routes.some(r => {
+          const first = r.stations[0]?.name;
+          const last = r.stations[r.stations.length - 1]?.name;
+          return first === routeRef.origin && last === routeRef.destination;
+        });
+        if (!matches) continue;
+
+        // Recompute incidents for each matching route using JourneyService mapping
+        const updatedRoutes = await Promise.all(journey.routes.map(async (r) => {
+          const first = r.stations[0]?.name;
+          const last = r.stations[r.stations.length - 1]?.name;
+          if (first === routeRef.origin && last === routeRef.destination) {
+            // compute incidents for this route only
+            const incidents = await (this.journeyService as any).findIncidentsForRoute(first, last, r.stations);
+            return { ...r, incidents };
+          }
+          return r;
+        }));
+
+        const updatedJourney = { ...journey, routes: updatedRoutes };
+        this.journeySessionService.setJourney(journeyId, updatedJourney);
+      }
+    }
+
+    return saved;
   }
 
   async mockUserLocation(userId: string, longitude: number, latitude: number): Promise<{ userId: string; longitude: number; latitude: number }> {

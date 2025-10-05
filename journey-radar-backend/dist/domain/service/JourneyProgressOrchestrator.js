@@ -14,7 +14,7 @@ class JourneyProgressOrchestrator {
     }
     async computeAndPersist(journeyId, coordinates, userId) {
         const journey = this.journeySessionService.getJourney(journeyId);
-        const effectiveJourney = journey ?? this.journeyService.computeJourney({ station: { name: 'Unknown' } }, { station: { name: 'Unknown' } });
+        const effectiveJourney = journey ?? await this.journeyService.computeJourney({ station: { name: 'Unknown' } }, { station: { name: 'Unknown' } });
         const progress = await this.journeyProgressService.computeProgress(effectiveJourney, coordinates, journeyId);
         try {
             if (userId)
