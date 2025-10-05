@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -18,7 +18,7 @@ const transformSdkJourneyToAppJourney = (
   destinationStation: Station
 ): AppJourney => {
   const journeyId = `journey_${Date.now()}`;
-  
+
   return {
     id: journeyId,
     title: `${sourceStation.name} → ${destinationStation.name}`,
@@ -93,7 +93,7 @@ const getCommunicationMethodIcon = (method: string): keyof typeof MaterialIcons.
     case 'train':
       return 'train';
     case 'tram':
-      return 'tram';
+      return 'subway';
     case 'metro':
       return 'subway';
     case 'walk':
@@ -110,20 +110,20 @@ const StationNode: React.FC<{
   onPress?: () => void;
 }> = ({ station, delay, colors, onPress }) => {
   return (
-    <TouchableOpacity 
-      style={styles.routeRow} 
+    <TouchableOpacity
+      style={styles.routeRow}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
     >
       <View style={styles.leftSection}>
         <View style={styles.stationInfo}>
-          <Text style={[styles.stationName, { color: colors.text }]}>
+          <Text style={[styles.stationName, { color: colors.text }] as any}>
             {station.name}
           </Text>
           {delay && (
             <View style={styles.etaContainer}>
               <MaterialIcons name="schedule" size={14} color={colors.yellow} />
-              <Text style={[styles.eta, { color: colors.yellow }]}>
+              <Text style={[styles.eta, { color: colors.yellow }] as any}>
                 +{Math.floor(delay.time / 60)} min
               </Text>
             </View>
@@ -137,7 +137,7 @@ const StationNode: React.FC<{
 
       <View style={styles.rightSection}>
         {onPress && (
-          <MaterialIcons name="map" size={16} color={colors.blue} style={{ opacity: 0.6 }} />
+          <MaterialIcons name="map" size={16} color={colors.blue} style={{ opacity: 0.6 } as any} />
         )}
       </View>
     </TouchableOpacity>
@@ -160,7 +160,7 @@ const IncidentNode: React.FC<{
         </View>
       </View>
       <View style={styles.rightStatusSection}>
-        <Text style={[styles.statusText, { color: colors.text }]}>
+        <Text style={[styles.statusText, { color: colors.text }] as any}>
           {incident.description}
         </Text>
       </View>
@@ -197,7 +197,9 @@ const RouteSection: React.FC<{
             />
             {index < route.stations.length - 1 && stationIncidents.length > 0 && (
               stationIncidents.map(incident => (
-                <IncidentNode key={incident.id} incident={incident} colors={colors} />
+                <React.Fragment key={incident.id}>
+                  <IncidentNode incident={incident} colors={colors} />
+                </React.Fragment>
               ))
             )}
           </View>
@@ -224,18 +226,22 @@ export default function JourneyScreen(): React.JSX.Element {
   const colors = Colors[colorScheme ?? 'light'];
   const [showIncidentForm, setShowIncidentForm] = useState(false);
   const [isSubmittingIncident, setIsSubmittingIncident] = useState(false);
+  const [showIncidentConfirmModal, setShowIncidentConfirmModal] = useState(false);
+  const [incidentConfirmMessage, setIncidentConfirmMessage] = useState<string | null>(null);
+  const [showIncidentThanksModal, setShowIncidentThanksModal] = useState(false);
+  const [incidentPromptEnabled, setIncidentPromptEnabled] = useState(false); // feature flag (disabled by default)
   const { currentJourney, savedJourneys, setCurrentJourney, addFavoriteJourney, removeFavoriteJourney, isFavorite } = useJourney();
   const { setSelectedMapStation, sourceStation, destinationStation } = useRoute();
   const router = useRouter();
 
   // Use current journey if available, otherwise use the first saved journey as fallback
   const journey = currentJourney || savedJourneys[0];
-  
+
   const isJourneyFavorite = journey ? isFavorite(journey.id) : false;
 
   const handleStationPress = (station: Station) => {
     console.log('Station pressed:', station);
-    
+
     // If station doesn't have position, add mock coordinates based on station name hash
     // This is temporary until we get real coordinates from the backend
     let stationWithPosition = station;
@@ -244,7 +250,7 @@ export default function JourneyScreen(): React.JSX.Element {
       const hash = station.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const lat = 50.05936 + (hash % 100) / 1000; // Kraków area
       const lng = 19.93435 + ((hash * 7) % 100) / 1000;
-      
+
       stationWithPosition = {
         ...station,
         position: {
@@ -252,17 +258,17 @@ export default function JourneyScreen(): React.JSX.Element {
           longitude: lng,
         }
       };
-      
+
       console.log('Added mock position for station:', station.name, stationWithPosition.position);
     }
-    
+
     setSelectedMapStation(stationWithPosition);
     router.push('/map');
   };
 
   const handleToggleFavorite = () => {
     if (!journey) return;
-    
+
     if (isJourneyFavorite) {
       removeFavoriteJourney(journey.id);
     } else {
@@ -270,16 +276,55 @@ export default function JourneyScreen(): React.JSX.Element {
     }
   };
 
+  // Trigger random incident confirmation modal after 3 seconds
+  useEffect(() => {
+    if (!journey || !incidentPromptEnabled) return; // guard by feature flag
+    const timer = setTimeout(() => {
+      try {
+        const allStations = journey.routes.flatMap(r => r.stations);
+        if (allStations.length > 0) {
+          const randomStation = allStations[Math.floor(Math.random() * allStations.length)];
+          setIncidentConfirmMessage(`Wykryto incydent w pobliżu stacji ${randomStation.name}. Czy potwierdzasz?`);
+        } else {
+          setIncidentConfirmMessage('Wykryto incydent na trasie. Czy potwierdzasz?');
+        }
+      } catch {
+        setIncidentConfirmMessage('Wykryto incydent na trasie. Czy potwierdzasz?');
+      }
+      setShowIncidentConfirmModal(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [journey, incidentPromptEnabled]);
+
+  const closeIncidentQuestionModal = () => {
+    setShowIncidentConfirmModal(false);
+  };
+
+  const handleIncidentConfirmation = (confirmed: boolean) => {
+    console.log('User incident confirmation answer:', confirmed);
+    // Open thanks modal immediately, then close question modal to keep backdrop without flicker
+    setShowIncidentThanksModal(true);
+    setShowIncidentConfirmModal(false);
+  };
+
+  // Auto close thanks modal
+  useEffect(() => {
+    if (showIncidentThanksModal) {
+      const t = setTimeout(() => setShowIncidentThanksModal(false), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [showIncidentThanksModal]);
+
   // If no journey is available, show a message
   if (!journey) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.emptyState}>
           <MaterialIcons name="route" size={48} color={colors.icon} />
-          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+          <Text style={[styles.emptyStateTitle, { color: colors.text }] as any}>
             Nie wybrano podróży
           </Text>
-          <Text style={[styles.emptyStateText, { color: colors.icon }]}>
+          <Text style={[styles.emptyStateText, { color: colors.icon }] as any}>
             Wybierz podróż z ulubionych lub ekranu głównego.
           </Text>
         </View>
@@ -294,7 +339,7 @@ export default function JourneyScreen(): React.JSX.Element {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View style={styles.headerTitle}>
-              <Text style={[styles.mainTitle, { color: colors.text }]}>
+              <Text style={[styles.mainTitle, { color: colors.text }] as any}>
                 {journey.title || `Aktywna trasa do ${lastRouteStationName}`}
               </Text>
             </View>
@@ -303,10 +348,10 @@ export default function JourneyScreen(): React.JSX.Element {
               onPress={handleToggleFavorite}
               activeOpacity={0.7}
             >
-              <MaterialIcons 
-                name={isJourneyFavorite ? "favorite" : "favorite-border"} 
-                size={24} 
-                color={isJourneyFavorite ? colors.pink : colors.text} 
+              <MaterialIcons
+                name={isJourneyFavorite ? "favorite" : "favorite-border"}
+                size={24}
+                color={isJourneyFavorite ? colors.pink : colors.text}
               />
             </TouchableOpacity>
           </View>
@@ -315,13 +360,14 @@ export default function JourneyScreen(): React.JSX.Element {
         <View style={styles.treeContainer}>
           <View style={[styles.continuousLine, { backgroundColor: colors.blue }]} />
           {journey.routes.map((route, index) => (
-            <RouteSection
-              key={route.id}
-              route={route}
-              isLast={index === journey.routes.length - 1}
-              colors={colors}
-              onStationPress={handleStationPress}
-            />
+            <View key={route.id}>
+              <RouteSection
+                route={route}
+                isLast={index === journey.routes.length - 1}
+                colors={colors}
+                onStationPress={handleStationPress}
+              />
+            </View>
           ))}
         </View>
 
@@ -331,7 +377,7 @@ export default function JourneyScreen(): React.JSX.Element {
           activeOpacity={0.85}
         >
           <MaterialIcons name="add" size={24} color="white" />
-          <Text style={styles.reportButtonText}>Zgłoś problem</Text>
+          <Text style={styles.reportButtonText as any}>Zgłoś problem</Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -341,45 +387,45 @@ export default function JourneyScreen(): React.JSX.Element {
         journey={journey}
         onSubmit={async (payload) => {
           if (isSubmittingIncident) return;
-          
+
           setIsSubmittingIncident(true);
           try {
             console.log('Submitting incident:', payload);
-            
+
             // Map severity to IncidentType
             const incidentType = mapSeverityToIncidentType(payload.severity);
-            
+
             // Submit incident to backend
             await apiClient.reportIncident({
               userId: 'user_1', // TODO: Replace with actual user ID from auth context
               incidentType,
               description: payload.details,
             });
-            
+
             console.log('Incident submitted successfully');
-            
+
             // Reload journey to get updated incident data
             if (sourceStation && destinationStation) {
               console.log('Reloading journey...');
-              
+
               const sdkJourney = await apiClient.getJourney(
                 { station: { name: sourceStation.name } },
                 { station: { name: destinationStation.name } }
               );
-              
+
               // Transform and update current journey
               const updatedJourney = transformSdkJourneyToAppJourney(
                 sdkJourney,
                 sourceStation,
                 destinationStation
               );
-              
+
               setCurrentJourney(updatedJourney);
               console.log('Journey reloaded with new incidents');
             } else {
               console.warn('Cannot reload journey: source or destination station not available');
             }
-            
+
             setShowIncidentForm(false);
           } catch (error) {
             console.error('Error submitting incident:', error);
@@ -393,6 +439,70 @@ export default function JourneyScreen(): React.JSX.Element {
           }
         }}
       />
+
+      <Modal
+        visible={incidentPromptEnabled && showIncidentConfirmModal}
+        transparent
+        animationType="slide"
+        onRequestClose={closeIncidentQuestionModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[
+            styles.incidentModalContainer,
+            {
+              backgroundColor: colors.background,
+              borderColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+              minHeight: Dimensions.get('window').height * 0.25,
+            }
+          ]}>
+            <Text style={[styles.incidentModalTitle, { color: colors.text }] as any}>Incydent</Text>
+            <Text style={[styles.incidentModalMessage, { color: colors.text }] as any}>
+              {incidentConfirmMessage || 'Wykryto incydent na trasie. Czy potwierdzasz?'}
+            </Text>
+            <View style={styles.incidentModalButtons}>
+              <TouchableOpacity
+                style={[styles.incidentModalButton, { backgroundColor: colors.blue }]}
+                onPress={() => handleIncidentConfirmation(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.incidentModalButtonText as any}>Nie</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.incidentModalButton, { backgroundColor: colors.pink }]}
+                onPress={() => handleIncidentConfirmation(true)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.incidentModalButtonText as any}>Tak</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={incidentPromptEnabled && showIncidentThanksModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowIncidentThanksModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[
+            styles.incidentModalContainer,
+            styles.incidentThanksModal,
+            {
+              backgroundColor: colors.background,
+              borderColor: colorScheme === 'dark' ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+              minHeight: Dimensions.get('window').height * 0.22,
+              justifyContent: 'center'
+            }
+          ]}>
+            <View style={styles.incidentThanksContainer}>
+              <MaterialIcons name="check-circle" size={48} color={colors.pink} />
+              <Text style={[styles.incidentThanksText, { color: colors.text }] as any}>Dziękujemy za informację!</Text>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -490,5 +600,45 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     maxWidth: 280,
   },
+  incidentModalContainer: {
+    width: '100%',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 32,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.4)'
+  },
+  incidentModalTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
+  incidentModalMessage: { fontSize: 14, lineHeight: 20, marginBottom: 20 },
+  incidentModalButtons: { flexDirection: 'row', justifyContent: 'space-between', gap: 16 },
+  incidentModalButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  incidentModalButtonText: { color: 'white', fontSize: 16, fontWeight: '600' },
+  incidentThanksContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  incidentThanksText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  incidentThanksModal: {
+    paddingTop: 32,
+    paddingBottom: 40,
+  },
 });
-
