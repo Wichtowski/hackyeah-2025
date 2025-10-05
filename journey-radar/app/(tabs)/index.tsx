@@ -8,7 +8,6 @@ import { JourneysList } from '@/components/journeys-list';
 import { useRouter } from "expo-router";
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import {Header} from '@/components/header';
 
 export default function HomeScreen() {
   const router = useRouter();

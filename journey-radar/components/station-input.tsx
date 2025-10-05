@@ -8,7 +8,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { Station } from '@/types/journey';
-
+import { useColorScheme } from '@/hooks/use-color-scheme';
 
 export interface StationInputProps {
   onSourceChange: (station: Station | null) => void;
@@ -27,57 +27,39 @@ export const StationInput: React.FC<StationInputProps> = ({
   absolutePosition = true,
   enableChevron = false,
 }) => {
+  const colorScheme = useColorScheme();
+  const theme = Colors[colorScheme ?? 'light'];
+  const accent = theme.blue ?? theme.tint ?? '#4C8DFF';
+
   const [sourceText, setSourceText] = useState<string>(sourceStation?.name || '');
   const [destinationText, setDestinationText] = useState<string>(destinationStation?.name || '');
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isSourceFocused, setIsSourceFocused] = useState<boolean>(false);
   const [isDestinationFocused, setIsDestinationFocused] = useState<boolean>(false);
 
-  // Update local text states when props change (from context)
-  useEffect(() => {
-    setSourceText(sourceStation?.name || '');
-  }, [sourceStation]);
-
-  useEffect(() => {
-    setDestinationText(destinationStation?.name || '');
-  }, [destinationStation]);
+  useEffect(() => { setSourceText(sourceStation?.name || ''); }, [sourceStation]);
+  useEffect(() => { setDestinationText(destinationStation?.name || ''); }, [destinationStation]);
 
   const handleSourceChange = (text: string): void => {
     setSourceText(text);
-    // For now, we'll create a mock station object
-    // In a real app, this would search for stations and return actual data
     if (text.trim()) {
-      const mockStation: Station = {
+      onSourceChange({
         id: `source-${text}`,
         name: text,
-        position: {
-          latitude: 50.05936,
-          longitude: 19.93435,
-        },
-      };
-      onSourceChange(mockStation);
-    } else {
-      onSourceChange(null);
-    }
+        position: { latitude: 50.05936, longitude: 19.93435 },
+      });
+    } else onSourceChange(null);
   };
 
   const handleDestinationChange = (text: string): void => {
     setDestinationText(text);
-    // For now, we'll create a mock station object
-    // In a real app, this would search for stations and return actual data
     if (text.trim()) {
-      const mockStation: Station = {
+      onDestinationChange({
         id: `destination-${text}`,
         name: text,
-        position: {
-          latitude: 50.0647,
-          longitude: 19.9450,
-        },
-      };
-      onDestinationChange(mockStation);
-    } else {
-      onDestinationChange(null);
-    }
+        position: { latitude: 50.0647, longitude: 19.945 },
+      });
+    } else onDestinationChange(null);
   };
 
   const clearSource = (): void => {
@@ -87,84 +69,95 @@ export const StationInput: React.FC<StationInputProps> = ({
 
   const swapStations = (): void => {
     const tempSource = sourceText;
-    const tempSourceStation = sourceStation;
-
+    const tempStation = sourceStation;
     setSourceText(destinationText);
     setDestinationText(tempSource);
-
     onSourceChange(destinationStation);
-    onDestinationChange(tempSourceStation);
+    onDestinationChange(tempStation);
   };
 
-  const toggleCollapse = (): void => {
-    console.log('Toggling collapse, current state:', isCollapsed);
-    setIsCollapsed(!isCollapsed);
-  };
+  const toggleCollapse = (): void => setIsCollapsed(!isCollapsed);
 
   return (
-    <View style={[styles.container, !absolutePosition && styles.relativeContainer, enableChevron && isCollapsed && styles.collapsedContainer]}>
-      <View style={[styles.inputContainer, !absolutePosition && styles.noBorderInputContainer, enableChevron && isCollapsed && styles.collapsedInputContainer]}>
+    <View style={[
+      styles.container,
+      !absolutePosition && styles.relativeContainer,
+      enableChevron && isCollapsed && styles.collapsedContainer
+    ]}>
+      <View style={[
+        styles.inputContainer,
+        { backgroundColor: theme.background, shadowColor: '#000' },
+        !absolutePosition && styles.noBorderInputContainer,
+        enableChevron && isCollapsed && styles.collapsedInputContainer
+      ]}>
         {(!enableChevron || !isCollapsed) && (
           <>
             <View>
-              <View style={[styles.inputFieldContainer, isSourceFocused && styles.inputFieldContainerFocused]}>
+              <View style={[
+                styles.inputFieldContainer,
+                { borderColor: isSourceFocused ? accent : '#2E2E2E' },
+                isSourceFocused && styles.inputFieldContainerFocused
+              ]}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name="location" size={20} color={Colors.light.icon} />
+                  <Ionicons name="location" size={20} color={accent} />
                 </View>
                 <TextInput
                   id="source-station"
-                  style={[styles.inputField, { outlineStyle: 'none' } as never]}
+                  style={[styles.inputField]}
                   value={sourceText}
                   onChangeText={handleSourceChange}
-                  autoCorrect={true}
                   onFocus={() => setIsSourceFocused(true)}
                   onBlur={() => setIsSourceFocused(false)}
-                  autoComplete='off'
                   placeholder="Stacja początkowa"
-                  placeholderTextColor={Colors.light.icon}
+                  placeholderTextColor="#888"
+                  autoComplete="off"
                 />
                 {sourceText.length > 0 && (
                   <TouchableOpacity onPress={clearSource} style={styles.clearButton}>
-                    <Ionicons name="close-circle" size={20} color={Colors.light.icon} />
+                    <Ionicons name="close-circle" size={20} color={accent} />
                   </TouchableOpacity>
                 )}
               </View>
             </View>
 
-            <View style={styles.separatorLine} />
-            
+            <View style={[styles.separatorLine, { backgroundColor: '#333' }]} />
+
             <View>
-              <View style={[styles.inputFieldContainer, isDestinationFocused && styles.inputFieldContainerFocused]}>
+              <View style={[
+                styles.inputFieldContainer,
+                { borderColor: isDestinationFocused ? accent : '#2E2E2E' },
+                isDestinationFocused && styles.inputFieldContainerFocused
+              ]}>
                 <View style={styles.iconContainer}>
-                  <Ionicons name="flag" size={20} color={Colors.light.icon} />
+                  <Ionicons name="flag" size={20} color={accent} />
                 </View>
                 <TextInput
                   id="destination-station"
-                  style={[styles.inputField, { outlineStyle: 'none' } as never]}
+                  style={styles.inputField}
                   value={destinationText}
                   onChangeText={handleDestinationChange}
                   onFocus={() => setIsDestinationFocused(true)}
                   onBlur={() => setIsDestinationFocused(false)}
                   placeholder="Stacja docelowa"
-                  placeholderTextColor={Colors.light.icon}
-                  autoComplete='off'
+                  placeholderTextColor="#888"
+                  autoComplete="off"
                 />
                 {destinationText.length > 0 && (
-                <TouchableOpacity onPress={swapStations} style={styles.swapButton}>
-                  <Ionicons name="swap-vertical" size={20} color={Colors.light.icon} />
-                </TouchableOpacity>
+                  <TouchableOpacity onPress={swapStations} style={styles.swapButton}>
+                    <Ionicons name="swap-vertical" size={20} color={accent} />
+                  </TouchableOpacity>
                 )}
               </View>
             </View>
           </>
         )}
-        
+
         {enableChevron && (
-          <TouchableOpacity onPress={toggleCollapse} style={styles.toggleButton}>
-            <Ionicons 
-              name={isCollapsed ? "chevron-down" : "chevron-up"} 
-              size={24} 
-              color={Colors.light.icon} 
+          <TouchableOpacity onPress={toggleCollapse} style={[styles.toggleButton, { backgroundColor: accent + '33' }]}>
+            <Ionicons
+              name={isCollapsed ? 'chevron-down' : 'chevron-up'}
+              size={24}
+              color={accent}
             />
           </TouchableOpacity>
         )}
@@ -172,6 +165,9 @@ export const StationInput: React.FC<StationInputProps> = ({
     </View>
   );
 };
+
+const DARK_FIELD_BG = '#1E1E1E';
+const DARK_FIELD_FOCUS_BG = '#262626';
 
 const styles = StyleSheet.create({
   container: {
@@ -182,34 +178,16 @@ const styles = StyleSheet.create({
     zIndex: 2000,
     paddingHorizontal: 0,
   },
-  relativeContainer: {
-    position: 'relative',
-    top: 0,
-    zIndex: 1,
-  },
-  collapsedContainer: {
-    top: 0,
-    bottom: 'auto',
-    zIndex: 2000,
-    position: 'absolute',
-  },
+  relativeContainer: { position: 'relative', top: 0, zIndex: 1 },
+  collapsedContainer: { top: 0, bottom: 'auto', zIndex: 2000, position: 'absolute' },
   inputContainer: {
-    backgroundColor: Colors.light.background,
-    borderRadius: 12,
+    borderRadius: 16,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
     padding: 16,
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.25)',
-    elevation: 8,
     width: '100%',
   },
-  noBorderInputContainer: {
-    borderRadius: 0,
-    borderTopLeftRadius: 0,
-    borderTopRightRadius: 0,
-    boxShadow: 'none',
-    elevation: 0,
-  },
+  noBorderInputContainer: { borderRadius: 0, shadowOpacity: 0, elevation: 0 },
   collapsedInputContainer: {
     top: 44,
     height: 50,
@@ -219,63 +197,36 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
-    backgroundColor: Colors.light.background,
     borderWidth: 1,
-    borderColor: Colors.light.icon + '30',
-    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.25)',
-    elevation: 8,
+    borderColor: '#333',
   },
-  inputHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.light.text,
-    marginLeft: 8,
-  },
-  iconContainer: {
-    padding: 8,
-    marginRight: 8,
-  },
-  separatorLine: {
-    height: 1,
-    backgroundColor: Colors.light.icon + '30',
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
+  iconContainer: { padding: 8, marginRight: 4 },
+  separatorLine: { height: 1, marginVertical: 12, marginHorizontal: 4 },
   inputFieldContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    backgroundColor: Colors.light.background,
-    borderWidth: 0,
+    borderRadius: 10,
+    paddingHorizontal: 4,
+    backgroundColor: DARK_FIELD_BG,
+    borderWidth: 1,
+    minHeight: 52,
   },
   inputFieldContainerFocused: {
-    backgroundColor: '#f1f1f1',
-    borderWidth: 0,
+    backgroundColor: DARK_FIELD_FOCUS_BG,
   },
   inputField: {
     flex: 1,
     height: 44,
     fontSize: 16,
-    color: Colors.light.text,
-    borderWidth: 0,
+    color: '#FFF',
+    paddingHorizontal: 4,
   },
-  clearButton: {
-    padding: 4,
-  },
-  swapButton: {
-    padding: 4,
-    marginLeft: 8,
-  },
+  clearButton: { padding: 4 },
+  swapButton: { padding: 4, marginLeft: 4 },
   toggleButton: {
     padding: 8,
-    backgroundColor: Colors.light.icon + '20',
     borderRadius: 20,
     alignSelf: 'center',
+    marginTop: 8
   },
 });
