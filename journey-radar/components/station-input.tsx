@@ -103,7 +103,7 @@ export const StationInput: React.FC<StationInputProps> = ({
                 </View>
                 <TextInput
                   id="source-station"
-                  style={[styles.inputField]}
+                  style={[styles.inputField, { outlineStyle: 'none' as never }]}
                   value={sourceText}
                   onChangeText={handleSourceChange}
                   onFocus={() => setIsSourceFocused(true)}
@@ -133,7 +133,7 @@ export const StationInput: React.FC<StationInputProps> = ({
                 </View>
                 <TextInput
                   id="destination-station"
-                  style={styles.inputField}
+                  style={[styles.inputField, { outlineStyle: 'none' as never }]}
                   value={destinationText}
                   onChangeText={handleDestinationChange}
                   onFocus={() => setIsDestinationFocused(true)}
@@ -184,7 +184,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderTopLeftRadius: 0,
     borderTopRightRadius: 0,
-    padding: 16,
     width: '100%',
   },
   noBorderInputContainer: { borderRadius: 0, shadowOpacity: 0, elevation: 0 },
@@ -219,7 +218,6 @@ const styles = StyleSheet.create({
     height: 44,
     fontSize: 16,
     color: '#FFF',
-    paddingHorizontal: 4,
   },
   clearButton: { padding: 4 },
   swapButton: { padding: 4, marginLeft: 4 },

@@ -1,4 +1,4 @@
-import { Alert, View, StyleSheet, ScrollView, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { Alert, View, StyleSheet, ScrollView, Text, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StationInput } from '@/components/station-input';
 import { useRoute } from '@/contexts/RouteContext';
@@ -11,7 +11,7 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import {Header} from '@/components/header';
 import { apiClient } from '@journey-radar/sdk';
 import type { Journey as SdkJourney } from '@journey-radar/sdk';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 
 // Transform SDK Journey to App Journey
@@ -57,6 +57,28 @@ export default function HomeScreen() {
   const { getLastUsedJourneys, removeSavedJourney, setCurrentJourney, addSavedJourney } = useJourney();
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+
+  // Animation values
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
+  // Animate button when both stations are filled
+  useEffect(() => {
+    const shouldShow = !!sourceStation && !!destinationStation;
+    
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: shouldShow ? 1 : 0,
+        duration: 400,
+        useNativeDriver: false,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: shouldShow ? 1 : 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [sourceStation, destinationStation, slideAnim, opacityAnim]);
 
   const handleSourceChange = (station: Station | null): void => {
     setSourceStation(station);
@@ -175,27 +197,41 @@ export default function HomeScreen() {
             absolutePosition={false}
           />
           
-          <TouchableOpacity
+          <Animated.View
             style={[
-              styles.searchButton,
+              styles.buttonContainer,
               {
-                backgroundColor: colors.green,
-                opacity: (!sourceStation || !destinationStation || isSearching) ? 0.5 : 1,
+                maxHeight: slideAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 100],
+                }),
+                opacity: opacityAnim,
+                overflow: 'hidden',
               },
             ]}
-            onPress={handleSearch}
-            disabled={!sourceStation || !destinationStation || isSearching}
-            activeOpacity={0.85}
           >
-            {isSearching ? (
-              <ActivityIndicator color="white" size="small" />
-            ) : (
-              <Ionicons name="search" size={20} color="white" />
-            )}
-            <Text style={styles.searchButtonText}>
-              {isSearching ? 'Szukam...' : 'Szukaj połączenia'}
-            </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.searchButton,
+                {
+                  backgroundColor: colors.green,
+                  opacity: isSearching ? 0.5 : 1,
+                },
+              ]}
+              onPress={handleSearch}
+              disabled={!sourceStation || !destinationStation || isSearching}
+              activeOpacity={0.85}
+            >
+              {isSearching ? (
+                <ActivityIndicator color="white" size="small" />
+              ) : (
+                <Ionicons name="search" size={20} color="white" />
+              )}
+              <Text style={styles.searchButtonText}>
+                {isSearching ? 'Szukam...' : 'Szukaj połączenia'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
 
           {searchError && (
             <View style={styles.errorContainer}>
@@ -234,6 +270,9 @@ const styles = StyleSheet.create({
   mainTitle: { fontSize: 24, fontWeight: 'bold', lineHeight: 32, textAlign: 'center' },
   sectionCard: { borderWidth: 1, borderRadius: 16, padding: 16 },
   journeysWrapper: { flex: 1, paddingTop: 4 },
+  buttonContainer: {
+    width: '100%',
+  },
   searchButton: {
     flexDirection: 'row',
     alignItems: 'center',

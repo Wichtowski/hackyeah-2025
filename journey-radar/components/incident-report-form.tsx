@@ -15,11 +15,27 @@ import { Colors } from '@/constants/theme';
 import { SEVERITY_OPTIONS } from '@/types/incident-severity';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Journey, Route } from '@/types/journey';
+import { apiClient } from '@journey-radar/sdk';
+
+interface RouteSegment {
+  routeId: string;
+  fromStation: string;
+  toStation: string;
+  label: string;
+  stationIndex: number;
+  routeIndex: number;
+}
 
 interface IncidentReportFormProps {
   visible?: boolean;
   onClose: () => void;
-  onSubmit?: (payload: { severity: string; details: string }) => void;
+  journey?: Journey | null;
+  onSubmit?: (payload: { 
+    severity: string; 
+    details: string; 
+    routeSegment?: RouteSegment;
+  }) => void;
 }
 
 const RADIUS_CONTROL = 12;
@@ -30,6 +46,7 @@ const AUTO_CLOSE_DELAY = 1800;
 const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
   visible = false,
   onClose,
+  journey,
   onSubmit,
 }) => {
   const colorScheme = useColorScheme();
@@ -37,6 +54,32 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
   const [selectedSeverity, setSelectedSeverity] = useState(SEVERITY_OPTIONS[1].value);
   const [details, setDetails] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [selectedSegmentIndex, setSelectedSegmentIndex] = useState(0);
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
+
+  // Generate route segments from journey
+  const routeSegments = useMemo((): RouteSegment[] => {
+    if (!journey) return [];
+
+    const segments: RouteSegment[] = [];
+    
+    journey.routes.forEach((route, routeIndex) => {
+      for (let i = 0; i < route.stations.length - 1; i++) {
+        const fromStation = route.stations[i];
+        const toStation = route.stations[i + 1];
+        segments.push({
+          routeId: route.id,
+          fromStation: fromStation.name,
+          toStation: toStation.name,
+          label: `${fromStation.name} → ${toStation.name}`,
+          stationIndex: i,
+          routeIndex,
+        });
+      }
+    });
+
+    return segments;
+  }, [journey]);
 
   const severityColorMap: Record<string, string> = {
     low: colors.blue,
@@ -63,10 +106,54 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
 
   const handleSelectSeverity = (severity: string) => setSelectedSeverity(severity);
 
+  const handleSelectSegment = (index: number) => setSelectedSegmentIndex(index);
+
+  const handleDetectLocation = async () => {
+    if (!journey) return;
+
+    setIsDetectingLocation(true);
+    try {
+      // Mock coordinates for demonstration - in production, use actual location
+      // For now, let's simulate being near the middle of the journey
+      const mockCoordinates = {
+        longitude: 19.95,
+        latitude: 50.06,
+      };
+
+      console.log('Detecting location with coordinates:', mockCoordinates);
+      
+      // TODO: In production, get actual user location
+      // const { status } = await Location.requestForegroundPermissionsAsync();
+      // const location = await Location.getCurrentPositionAsync({});
+      // const coordinates = { longitude: location.coords.longitude, latitude: location.coords.latitude };
+
+      // For now, just select a segment based on simple heuristic
+      // In a real implementation, you would call the API:
+      // const progress = await apiClient.getJourneyStage(journey.id, mockCoordinates);
+      // Then find the segment that matches the current position
+
+      // Simple demo: select segment in the middle
+      const middleIndex = Math.floor(routeSegments.length / 2);
+      setSelectedSegmentIndex(middleIndex);
+      
+      console.log('Auto-selected segment:', routeSegments[middleIndex]);
+    } catch (error) {
+      console.error('Error detecting location:', error);
+    } finally {
+      setIsDetectingLocation(false);
+    }
+  };
+
   const handleSubmit = () => {
-    onSubmit?.({ severity: selectedSeverity, details });
+    const selectedSegment = routeSegments[selectedSegmentIndex];
+    onSubmit?.({ 
+      severity: selectedSeverity, 
+      details,
+      routeSegment: selectedSegment,
+    });
     setDetails('');
     setSelectedSeverity(SEVERITY_OPTIONS[1].value);
+    setSelectedSegmentIndex(0);
     setSubmitted(true);
   };
 
@@ -136,21 +223,86 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
                 keyboardShouldPersistTaps="handled"
               >
                 <View style={styles.section}>
-                  <Text style={[styles.label, { color: colors.text }]}>Na odcinku</Text>
-                  <View
-                    style={[
-                      styles.readonlyPill,
-                      {
-                        borderColor: colors.blue + '30',
-                        backgroundColor: colors.blue + '10',
-                        borderRadius: RADIUS_CONTROL,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.readonlyPillText, { color: colors.text }]}>
-                      Kraków Gł. → Wieliczka
-                    </Text>
+                  <View style={styles.sectionHeader}>
+                    <Text style={[styles.label, { color: colors.text }]}>Na odcinku</Text>
+                    {routeSegments.length > 0 && (
+                      <TouchableOpacity
+                        style={[
+                          styles.detectButton,
+                          {
+                            backgroundColor: colors.blue + '20',
+                            borderColor: colors.blue,
+                          },
+                        ]}
+                        onPress={handleDetectLocation}
+                        disabled={isDetectingLocation}
+                        activeOpacity={0.7}
+                      >
+                        {isDetectingLocation ? (
+                          <Ionicons name="location" size={14} color={colors.blue} />
+                        ) : (
+                          <Ionicons name="navigate" size={14} color={colors.blue} />
+                        )}
+                        <Text style={[styles.detectButtonText, { color: colors.blue }]}>
+                          {isDetectingLocation ? 'Wykrywanie...' : 'Moja lokalizacja'}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
+                  {routeSegments.length > 0 ? (
+                    <ScrollView 
+                      horizontal 
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.segmentScroll}
+                    >
+                      {routeSegments.map((segment, index) => {
+                        const isSelected = index === selectedSegmentIndex;
+                        return (
+                          <TouchableOpacity
+                            key={`${segment.routeId}-${index}`}
+                            style={[
+                              styles.segmentPill,
+                              {
+                                borderColor: isSelected ? colors.blue : colors.blue + '30',
+                                backgroundColor: isSelected ? colors.blue + '22' : colors.blue + '10',
+                                borderRadius: RADIUS_CONTROL,
+                                borderWidth: isSelected ? 2 : 1,
+                              },
+                            ]}
+                            onPress={() => handleSelectSegment(index)}
+                            activeOpacity={0.7}
+                          >
+                            <Text 
+                              style={[
+                                styles.segmentPillText, 
+                                { 
+                                  color: colors.text,
+                                  fontWeight: isSelected ? '600' : '500',
+                                }
+                              ]}
+                            >
+                              {segment.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  ) : (
+                    <View
+                      style={[
+                        styles.readonlyPill,
+                        {
+                          borderColor: colors.blue + '30',
+                          backgroundColor: colors.blue + '10',
+                          borderRadius: RADIUS_CONTROL,
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.readonlyPillText, { color: colors.text }]}>
+                        Brak danych o trasie
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <View style={styles.section}>
@@ -285,12 +437,30 @@ const styles = StyleSheet.create({
   scroll: { maxHeight: 520 },
   scrollContent: { paddingHorizontal: 20 },
   section: { marginTop: 18 },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   label: {
     fontSize: 12,
     fontWeight: '600',
-    marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  detectButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 4,
+  },
+  detectButtonText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   readonlyPill: {
     paddingVertical: 12,
@@ -298,6 +468,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   readonlyPillText: { fontSize: 14, fontWeight: '500' },
+  segmentScroll: {
+    marginTop: 4,
+  },
+  segmentPill: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    marginRight: 8,
+    minWidth: 120,
+  },
+  segmentPillText: { 
+    fontSize: 13, 
+    textAlign: 'center',
+  },
   severityContainer: {
     flexDirection: 'row',
     borderWidth: 1,

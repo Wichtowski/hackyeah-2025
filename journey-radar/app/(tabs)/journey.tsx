@@ -7,6 +7,8 @@ import { Route, Station, Incident } from '@/types/journey';
 import { useJourney } from '@/contexts/JourneyContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import IncidentReportForm from '@/components/incident-report-form';
+import { useRouter } from 'expo-router';
+import { useRoute } from '@/contexts/RouteContext';
 
 const getIncidentIcon = (type: string): keyof typeof MaterialIcons.glyphMap => {
   switch (type) {
@@ -55,9 +57,14 @@ const StationNode: React.FC<{
   station: Station;
   delay?: { time: number; description?: string };
   colors: typeof Colors.light;
-}> = ({ station, delay, colors }) => {
+  onPress?: () => void;
+}> = ({ station, delay, colors, onPress }) => {
   return (
-    <View style={styles.routeRow}>
+    <TouchableOpacity 
+      style={styles.routeRow} 
+      onPress={onPress}
+      activeOpacity={onPress ? 0.7 : 1}
+    >
       <View style={styles.leftSection}>
         <View style={styles.stationInfo}>
           <Text style={[styles.stationName, { color: colors.text }]}>
@@ -78,8 +85,12 @@ const StationNode: React.FC<{
         <View style={[styles.stationDot, { backgroundColor: colors.blue }]} />
       </View>
 
-      <View style={styles.rightSection} />
-    </View>
+      <View style={styles.rightSection}>
+        {onPress && (
+          <MaterialIcons name="map" size={16} color={colors.blue} style={{ opacity: 0.6 }} />
+        )}
+      </View>
+    </TouchableOpacity>
   );
 };
 
@@ -111,7 +122,8 @@ const RouteSection: React.FC<{
   route: Route;
   isLast: boolean;
   colors: typeof Colors.light;
-}> = ({ route, isLast, colors }) => {
+  onStationPress?: (station: Station) => void;
+}> = ({ route, isLast, colors, onStationPress }) => {
   const methodIcon = getCommunicationMethodIcon(route.communicationMethod);
 
   return (
@@ -131,6 +143,7 @@ const RouteSection: React.FC<{
               station={station}
               delay={hasIncidentBefore ? route.delay : undefined}
               colors={colors}
+              onPress={() => onStationPress?.(station)}
             />
             {index < route.stations.length - 1 && stationIncidents.length > 0 && (
               stationIncidents.map(incident => (
@@ -161,9 +174,38 @@ export default function JourneyScreen(): React.JSX.Element {
   const colors = Colors[colorScheme ?? 'light'];
   const [showIncidentForm, setShowIncidentForm] = useState(false);
   const { currentJourney, savedJourneys } = useJourney();
+  const { setSelectedMapStation } = useRoute();
+  const router = useRouter();
 
   // Use current journey if available, otherwise use the first saved journey as fallback
   const journey = currentJourney || savedJourneys[0];
+
+  const handleStationPress = (station: Station) => {
+    console.log('Station pressed:', station);
+    
+    // If station doesn't have position, add mock coordinates based on station name hash
+    // This is temporary until we get real coordinates from the backend
+    let stationWithPosition = station;
+    if (!station.position) {
+      // Generate consistent but different coordinates for each station
+      const hash = station.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const lat = 50.05936 + (hash % 100) / 1000; // Kraków area
+      const lng = 19.93435 + ((hash * 7) % 100) / 1000;
+      
+      stationWithPosition = {
+        ...station,
+        position: {
+          latitude: lat,
+          longitude: lng,
+        }
+      };
+      
+      console.log('Added mock position for station:', station.name, stationWithPosition.position);
+    }
+    
+    setSelectedMapStation(stationWithPosition);
+    router.push('/map');
+  };
 
   // If no journey is available, show a message
   if (!journey) {
@@ -204,6 +246,7 @@ export default function JourneyScreen(): React.JSX.Element {
               route={route}
               isLast={index === journey.routes.length - 1}
               colors={colors}
+              onStationPress={handleStationPress}
             />
           ))}
         </View>
@@ -221,6 +264,11 @@ export default function JourneyScreen(): React.JSX.Element {
       <IncidentReportForm
         visible={showIncidentForm}
         onClose={() => setShowIncidentForm(false)}
+        journey={journey}
+        onSubmit={(payload) => {
+          console.log('Incident reported:', payload);
+          // TODO: Send to backend
+        }}
       />
     </SafeAreaView>
   );

@@ -4,8 +4,10 @@ import { Station } from '@/types/journey';
 interface RouteContextType {
   sourceStation: Station | null;
   destinationStation: Station | null;
+  selectedMapStation: Station | null;
   setSourceStation: (station: Station | null) => void;
   setDestinationStation: (station: Station | null) => void;
+  setSelectedMapStation: (station: Station | null) => void;
   setRoute: (source: Station, destination: Station) => void;
 }
 
@@ -26,6 +28,7 @@ interface RouteProviderProps {
 export const RouteProvider: React.FC<RouteProviderProps> = ({ children }) => {
   const [sourceStation, setSourceStation] = useState<Station | null>(null);
   const [destinationStation, setDestinationStation] = useState<Station | null>(null);
+  const [selectedMapStation, setSelectedMapStation] = useState<Station | null>(null);
 
   const setRoute = (source: Station, destination: Station) => {
     setSourceStation(source);
@@ -37,8 +40,10 @@ export const RouteProvider: React.FC<RouteProviderProps> = ({ children }) => {
       value={{
         sourceStation,
         destinationStation,
+        selectedMapStation,
         setSourceStation,
         setDestinationStation,
+        setSelectedMapStation,
         setRoute,
       }}
     >

@@ -37,11 +37,11 @@ export default function TabLayout() {
               tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
             }}
           />
-      <Tabs.Screen
-        name="journey"
-        options={{
-          title: 'Journey',
-          tabBarIcon: ({ color }) => <Fontisto name="direction-sign" size={24}color={color} />,
+          <Tabs.Screen
+            name="journey"
+            options={{
+              title: 'Journey',
+              tabBarIcon: ({ color }) => <Fontisto name="direction-sign" size={24} color={color} />,
             }}
           />
           <Tabs.Screen
@@ -49,6 +49,12 @@ export default function TabLayout() {
             options={{
               title: 'Favourites',
               tabBarIcon: ({ color }) => <IconSymbol size={24} name="heart.fill" color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="map"
+            options={{
+              href: null,
             }}
           />
         </Tabs>

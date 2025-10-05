@@ -99,6 +99,6 @@ const styles = StyleSheet.create({
   header: { paddingTop: 10 },
   headerTop: { flexDirection: 'row', alignItems: 'flex-start' },
   headerTitle: { flex: 1, marginLeft: 16 },
-  mainTitle: { fontSize: 24, fontWeight: 'bold', lineHeight: 32 },
+  mainTitle: { fontSize: 24, fontWeight: 'bold', lineHeight: 32, textAlign: 'center' },
   journeysWrapper: { flex: 1, paddingTop: 4 },
 });
