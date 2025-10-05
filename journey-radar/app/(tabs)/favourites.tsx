@@ -69,7 +69,7 @@ export default function FavouritesScreen() {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View style={styles.headerTitle}>
-              <Text style={[styles.mainTitle, { color: colors.text }]}>                Journey Radar              </Text>
+              <Text style={[styles.mainTitle, { color: colors.text }]}>Journey Radar</Text>
             </View>
           </View>
         </View>

@@ -1,21 +1,62 @@
-import { Alert, View, StyleSheet, ScrollView, Text } from 'react-native';
+import { Alert, View, StyleSheet, ScrollView, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StationInput } from '@/components/station-input';
 import { useRoute } from '@/contexts/RouteContext';
 import { useJourney } from '@/contexts/JourneyContext';
-import { Journey, Station } from '@/types/journey';
+import { Journey, Station, CommunicationMethod } from '@/types/journey';
 import { JourneysList } from '@/components/journeys-list';
 import { useRouter } from "expo-router";
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import {Header} from '@/components/header';
+import { apiClient } from '@journey-radar/sdk';
+import type { Journey as SdkJourney } from '@journey-radar/sdk';
+import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+
+// Transform SDK Journey to App Journey
+const transformSdkJourneyToAppJourney = (
+  sdkJourney: SdkJourney,
+  sourceStation: Station,
+  destinationStation: Station
+): Journey => {
+  const journeyId = `journey_${Date.now()}`;
+  
+  return {
+    id: journeyId,
+    title: `${sourceStation.name} → ${destinationStation.name}`,
+    distance: sdkJourney.distance,
+    duration: sdkJourney.durationInSeconds,
+    routes: sdkJourney.routes.map((route, routeIndex) => ({
+      id: `route_${journeyId}_${routeIndex}`,
+      stations: route.stations.map((station, stationIndex) => ({
+        id: `station_${journeyId}_${routeIndex}_${stationIndex}`,
+        name: station.name,
+        position: undefined,
+      })),
+      delay: route.delay,
+      incidents: route.incidents.map((incident, incidentIndex) => ({
+        id: `incident_${journeyId}_${routeIndex}_${incidentIndex}`,
+        stationId: `station_${journeyId}_${routeIndex}_${route.stations.indexOf(incident.connection.from)}`,
+        position: { longitude: 0, latitude: 0 }, // SDK doesn't provide position for incidents
+        description: incident.type,
+        severity: incident.severity,
+        type: incident.type,
+      })),
+      communicationMethod: 'train' as CommunicationMethod, // SDK doesn't provide this, defaulting to train
+      duration: sdkJourney.durationInSeconds / sdkJourney.routes.length, // Distribute duration evenly
+    })),
+  };
+};
 
 export default function HomeScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { sourceStation, destinationStation, setSourceStation, setDestinationStation } = useRoute();
-  const { getLastUsedJourneys, removeSavedJourney, setCurrentJourney } = useJourney();
+  const { getLastUsedJourneys, removeSavedJourney, setCurrentJourney, addSavedJourney } = useJourney();
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const handleSourceChange = (station: Station | null): void => {
     setSourceStation(station);
@@ -25,6 +66,44 @@ export default function HomeScreen() {
   const handleDestinationChange = (station: Station | null): void => {
     setDestinationStation(station);
     console.log('Destination station set to:', station);
+    setSearchError(null);
+  };
+
+  const handleSearch = async () => {
+    if (!sourceStation || !destinationStation) {
+      setSearchError('Proszę podać obie stacje');
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError(null);
+
+    try {
+      console.log('Searching journey from', sourceStation.name, 'to', destinationStation.name);
+      
+      const sdkJourney = await apiClient.getJourney(
+        { station: { name: sourceStation.name } },
+        { station: { name: destinationStation.name } }
+      );
+
+      console.log('SDK Journey found:', sdkJourney);
+
+      // Transform SDK journey to app journey format
+      const appJourney = transformSdkJourneyToAppJourney(sdkJourney, sourceStation, destinationStation);
+      console.log('Transformed to app journey:', appJourney);
+
+      // Set as current journey and save it
+      setCurrentJourney(appJourney);
+      addSavedJourney(appJourney);
+
+      // Navigate to journey screen
+      router.push('/journey');
+    } catch (error) {
+      console.error('Error searching journey:', error);
+      setSearchError('Nie udało się znaleźć połączenia. Sprawdź nazwy stacji i spróbuj ponownie.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleDeleteJourney = (journeyId: string) => {
@@ -82,7 +161,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View style={styles.headerTitle}>
-              <Text style={[styles.mainTitle, { color: colors.text }]}>                Journey Radar              </Text>
+              <Text style={[styles.mainTitle, { color: colors.text }]}>Journey Radar</Text>
             </View>
           </View>
         </View>
@@ -95,6 +174,35 @@ export default function HomeScreen() {
             destinationStation={destinationStation}
             absolutePosition={false}
           />
+          
+          <TouchableOpacity
+            style={[
+              styles.searchButton,
+              {
+                backgroundColor: colors.green,
+                opacity: (!sourceStation || !destinationStation || isSearching) ? 0.5 : 1,
+              },
+            ]}
+            onPress={handleSearch}
+            disabled={!sourceStation || !destinationStation || isSearching}
+            activeOpacity={0.85}
+          >
+            {isSearching ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Ionicons name="search" size={20} color="white" />
+            )}
+            <Text style={styles.searchButtonText}>
+              {isSearching ? 'Szukam...' : 'Szukaj połączenia'}
+            </Text>
+          </TouchableOpacity>
+
+          {searchError && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle" size={16} color={colors.pink} />
+              <Text style={[styles.errorText, { color: colors.pink }]}>{searchError}</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.journeysWrapper}>
@@ -123,7 +231,35 @@ const styles = StyleSheet.create({
   header: { paddingTop: 10 },
   headerTop: { flexDirection: 'row', alignItems: 'flex-start' },
   headerTitle: { flex: 1, marginLeft: 16 },
-  mainTitle: { fontSize: 24, fontWeight: 'bold', lineHeight: 32 },
+  mainTitle: { fontSize: 24, fontWeight: 'bold', lineHeight: 32, textAlign: 'center' },
   sectionCard: { borderWidth: 1, borderRadius: 16, padding: 16 },
   journeysWrapper: { flex: 1, paddingTop: 4 },
+  searchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    marginTop: 16,
+    gap: 8,
+  },
+  searchButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    padding: 12,
+    backgroundColor: '#fee',
+    borderRadius: 8,
+    gap: 8,
+  },
+  errorText: {
+    fontSize: 14,
+    flex: 1,
+  },
 });
