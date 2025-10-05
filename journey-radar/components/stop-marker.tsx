@@ -2,8 +2,6 @@ import React from 'react';
 import { Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import { GeoPosition } from '@/types/geo-position';
-import { Ionicons } from '@expo/vector-icons';
-import {Colors} from "@/constants/theme";
 
 
 interface StopMarkerProps {

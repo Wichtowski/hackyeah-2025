@@ -45,7 +45,7 @@ const SlideTab: React.FC<SlideTabProps> = ({
       backdropOpacity.value = withTiming(0, { duration: 300 });
       scale.value = withTiming(0.95, { duration: 300 });
     }
-  }, [visible, width]);
+  }, [visible, width, backdropOpacity, isAnimating, scale, translateX]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [

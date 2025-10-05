@@ -4,56 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Journey, Route, Station, Incident } from '@/types/journey';
+import { useJourney } from '@/contexts/JourneyContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import IncidentReportForm from '@/components/incident-report-form';
-
-const sampleJourney: Journey = {
-  id: '1',
-  distance: 250000,
-  duration: 14400,
-  routes: [
-    {
-      id: '1',
-      communicationMethod: 'train',
-      duration: 7200,
-      stations: [
-        { id: '1', name: 'Kraków Łagiewniki' },
-        { id: '2', name: 'Warszawa Centralna' },
-        { id: '3', name: 'Warszawa Powiśle' },
-        { id: '4', name: 'Warszawa Powion' }
-      ],
-      delay: {
-        time: 100,
-        description: 'Małe opóźnienia zgłoszone'
-      },
-      incidents: [
-        {
-          id: '1',
-          stationId: '3',
-          position: { longitude: 21.0122, latitude: 52.2297 },
-          description: 'Awaria/problem zgłoszony',
-            severity: 'high',
-          type: 'cancelled'
-        }
-      ]
-    },
-    {
-      id: '2',
-      communicationMethod: 'bus',
-      duration: 7200,
-      stations: [
-        { id: '5', name: 'Warszawa Powion' },
-        { id: '6', name: 'Warszawa Stadion' },
-        { id: '7', name: 'Praga Południe' }
-      ],
-      delay: {
-        time: 300,
-        description: 'Małe opóźnienia zgłoszony'
-      },
-      incidents: []
-    }
-  ]
-};
 
 const getIncidentIcon = (type: string): keyof typeof MaterialIcons.glyphMap => {
   switch (type) {
@@ -212,6 +165,29 @@ export default function JourneyScreen(): React.JSX.Element {
     sampleJourney.routes[sampleJourney.routes.length - 1]
       .stations[sampleJourney.routes[sampleJourney.routes.length - 1].stations.length - 1].name;
 
+  const { currentJourney, savedJourneys } = useJourney();
+
+  // Use current journey if available, otherwise use the first saved journey as fallback
+  const journey = currentJourney || savedJourneys[0];
+
+  // If no journey is available, show a message
+  if (!journey) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={styles.emptyState}>
+          <MaterialIcons name="route" size={48} color={colors.icon} />
+          <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+            Nie wybrano podróży
+          </Text>
+          <Text style={[styles.emptyStateText, { color: colors.icon }]}>
+            Wybierz podróż z ulubionych lub ekranu głównego.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const lastRouteStationName = journey.routes[journey.routes.length - 1].stations[journey.routes[journey.routes.length - 1].stations.length - 1].name;
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView style={styles.scrollView}>
@@ -219,7 +195,7 @@ export default function JourneyScreen(): React.JSX.Element {
           <View style={styles.headerTop}>
             <View style={styles.headerTitle}>
               <Text style={[styles.mainTitle, { color: colors.text }]}>
-                {sampleJourney.title || `Aktywna trasa do ${lastRouteStationName}`}
+                {journey.title || `Aktywna trasa do ${lastRouteStationName}`}
               </Text>
             </View>
           </View>
@@ -227,11 +203,11 @@ export default function JourneyScreen(): React.JSX.Element {
 
         <View style={styles.treeContainer}>
           <View style={[styles.continuousLine, { backgroundColor: colors.blue }]} />
-          {sampleJourney.routes.map((route, index) => (
+          {journey.routes.map((route, index) => (
             <RouteSection
               key={route.id}
               route={route}
-              isLast={index === sampleJourney.routes.length - 1}
+              isLast={index === journey.routes.length - 1}
               colors={colors}
             />
           ))}
@@ -324,4 +300,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   reportButtonText: { color: 'white', fontSize: 16, fontWeight: '600', marginLeft: 8 },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    maxWidth: 280,
+  },
 });
+
