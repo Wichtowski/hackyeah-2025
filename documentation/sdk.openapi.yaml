@@ -1,0 +1,302 @@
+openapi: 3.0.3
+info:
+  title: Journey Radar SDK API Surface
+  version: 1.0.0
+  description: |
+    Logical API exposed by the SDK. Endpoints map to backend /api routes.
+servers:
+  - url: http://localhost:3000/api
+
+paths:
+  /health:
+    get:
+      summary: SDK healthCheck()
+      tags: [Health]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResult'
+
+  /incidents:
+    post:
+      summary: SDK reportIncident()
+      tags: [Incidents]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIncidentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentReport'
+
+  /journeys:
+    get:
+      summary: SDK getJourney(origin, destination)
+      tags: [Journeys]
+      parameters:
+        - in: query
+          name: origin
+          required: true
+          schema: { type: string }
+        - in: query
+          name: destination
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Journey
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Journey'
+
+  /journeys/start:
+    post:
+      summary: SDK startJourney(journey)
+      tags: [Journeys]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Journey'
+      responses:
+        '201':
+          description: Journey started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyStartResponse'
+
+  /journeys/{journeyId}/progress:
+    get:
+      summary: SDK getJourneyStage(journeyId, coordinates)
+      tags: [Journeys]
+      parameters:
+        - in: path
+          name: journeyId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: longitude
+          required: true
+          schema: { type: number, format: double }
+        - in: query
+          name: latitude
+          required: true
+          schema: { type: number, format: double }
+        - in: query
+          name: userId
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Journey progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyProgress'
+
+  /journeys/history/{userId}:
+    get:
+      summary: SDK getJourneyHistory(userId)
+      tags: [Journeys]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Finished journeys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FinishedJourney'
+
+components:
+  schemas:
+    HealthResult:
+      type: object
+      properties:
+        message: { type: string }
+      required: [message]
+
+    IncidentType:
+      type: string
+      enum: [ISSUES, DELAY, SEVERE_BLOCKER]
+
+    ReporterType:
+      type: string
+      enum: [USER, DISPATCHER, EXTERNAL_SYSTEM]
+
+    Reporter:
+      type: object
+      properties:
+        id: { type: string }
+        type: { $ref: '#/components/schemas/ReporterType' }
+      required: [id, type]
+
+    Location:
+      type: object
+      properties:
+        longitude: { type: number, format: double }
+        latitude: { type: number, format: double }
+      required: [longitude, latitude]
+
+    RouteReference:
+      type: object
+      properties:
+        origin: { type: string }
+        destination: { type: string }
+        transportVehicleId: { type: string }
+      required: [origin, destination, transportVehicleId]
+
+    IncidentReportDetails:
+      type: object
+      properties:
+        reportedOnRoute:
+          oneOf:
+            - $ref: '#/components/schemas/RouteReference'
+            - type: 'null'
+
+    CreateIncidentRequest:
+      type: object
+      properties:
+        userId: { type: string }
+        incidentType: { $ref: '#/components/schemas/IncidentType' }
+        description: { type: string }
+      required: [userId, incidentType]
+
+    IncidentReport:
+      type: object
+      properties:
+        id: { type: string }
+        location: { $ref: '#/components/schemas/Location' }
+        reporter: { $ref: '#/components/schemas/Reporter' }
+        incidentType: { $ref: '#/components/schemas/IncidentType' }
+        details: { $ref: '#/components/schemas/IncidentReportDetails' }
+        timestamp: { type: string, format: date-time }
+        description: { type: string }
+      required: [id, location, reporter, incidentType, details, timestamp]
+
+    Station:
+      type: object
+      properties:
+        name: { type: string }
+      required: [name]
+
+    Delay:
+      type: object
+      properties:
+        time: { type: number }
+      required: [time]
+
+    ConnectionRef:
+      type: object
+      properties:
+        id: { type: number }
+      required: [id]
+
+    Incident:
+      type: object
+      properties:
+        severity:
+          type: string
+          enum: [small, medium, high]
+        type:
+          type: string
+          enum: [delay, problem, cancelled]
+        connection: { $ref: '#/components/schemas/ConnectionRef' }
+      required: [severity, type, connection]
+
+    Connection:
+      type: object
+      properties:
+        id: { type: number }
+        from: { $ref: '#/components/schemas/Station' }
+        to: { $ref: '#/components/schemas/Station' }
+        incident:
+          $ref: '#/components/schemas/Incident'
+      required: [id, from, to]
+
+    Route:
+      type: object
+      properties:
+        stations:
+          type: array
+          items: { $ref: '#/components/schemas/Station' }
+        delay: { $ref: '#/components/schemas/Delay' }
+        incidents:
+          type: array
+          items: { $ref: '#/components/schemas/Incident' }
+      required: [stations, delay, incidents]
+
+    Journey:
+      type: object
+      properties:
+        routes:
+          type: array
+          items: { $ref: '#/components/schemas/Route' }
+        distance: { type: number }
+        durationInSeconds: { type: number }
+      required: [routes, distance, durationInSeconds]
+
+    JourneyStartResponse:
+      type: object
+      properties:
+        journey_id: { type: string }
+      required: [journey_id]
+
+    Progress:
+      type: object
+      properties:
+        currentRoute: { type: integer }
+        currentStage: { type: integer }
+        currentConnection: { $ref: '#/components/schemas/Connection' }
+      required: [currentRoute, currentStage, currentConnection]
+
+    JourneyProgress:
+      type: object
+      properties:
+        journeyId: { type: string }
+        routes:
+          type: array
+          items: { $ref: '#/components/schemas/Route' }
+        progress: { $ref: '#/components/schemas/Progress' }
+        delay: { $ref: '#/components/schemas/Delay' }
+        firstStation: { $ref: '#/components/schemas/Station' }
+        lastStation: { $ref: '#/components/schemas/Station' }
+      required: [journeyId, routes, progress, delay, firstStation, lastStation]
+
+    FinishedJourney:
+      type: object
+      properties:
+        userId: { type: string }
+        journeyId: { type: string }
+        from:
+          type: object
+          properties:
+            name: { type: string }
+          required: [name]
+        to:
+          type: object
+          properties:
+            name: { type: string }
+          required: [name]
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time }
+      required: [userId, journeyId, from, to, startedAt, finishedAt]
+
+

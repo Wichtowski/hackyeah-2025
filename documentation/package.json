@@ -1,0 +1,13 @@
+{
+  "name": "journey-radar-documentation",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenAPI specifications for Journey Radar backend and SDK",
+  "scripts": {
+    "preview": "npx -y redoc-cli serve backend.openapi.yaml -p 8080",
+    "preview:sdk": "npx -y redoc-cli serve sdk.openapi.yaml -p 8081",
+    "validate": "npx -y @redocly/cli lint backend.openapi.yaml && npx -y @redocly/cli lint sdk.openapi.yaml"
+  }
+}
+
+

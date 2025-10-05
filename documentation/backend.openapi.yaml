@@ -1,0 +1,431 @@
+openapi: 3.0.3
+info:
+  title: Journey Radar Backend API
+  version: 1.0.0
+  description: |
+    REST API served by journey-radar-backend. Base path is /api.
+servers:
+  - url: http://localhost:3000/api
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [Health]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthBackend'
+
+  /incidents:
+    post:
+      summary: Report a new incident
+      tags: [Incidents]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIncidentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentReport'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /mock/location:
+    post:
+      summary: Mock a user's location (demo/testing)
+      tags: [Mock]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MockLocationRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MockLocationResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /journeys:
+    get:
+      summary: Get a journey plan
+      tags: [Journeys]
+      parameters:
+        - in: query
+          name: origin
+          schema: { type: string }
+          required: true
+          description: Origin station name
+        - in: query
+          name: destination
+          schema: { type: string }
+          required: true
+          description: Destination station name
+      responses:
+        '200':
+          description: Journey
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyBackend'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /journeys/start:
+    post:
+      summary: Start a journey
+      tags: [Journeys]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JourneyBackend'
+      responses:
+        '201':
+          description: Journey started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyStartResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /journeys/{journeyId}/progress:
+    get:
+      summary: Get journey progress
+      tags: [Journeys]
+      parameters:
+        - in: path
+          name: journeyId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: longitude
+          required: true
+          schema: { type: number, format: double }
+        - in: query
+          name: latitude
+          required: true
+          schema: { type: number, format: double }
+        - in: query
+          name: userId
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Journey progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JourneyProgressBackend'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /journeys/history/{userId}:
+    get:
+      summary: Get user's finished journeys
+      tags: [Journeys]
+      parameters:
+        - in: path
+          name: userId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Finished journeys
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FinishedJourney'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+    HealthBackend:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    Station:
+      type: object
+      properties:
+        name: { type: string }
+      required: [name]
+
+    Delay:
+      type: object
+      properties:
+        time: { type: number }
+      required: [time]
+
+    ConnectionRef:
+      type: object
+      properties:
+        id:
+          type: number
+      required: [id]
+
+    Incident:
+      type: object
+      description: Minimal incident representation to avoid recursive loops
+      properties:
+        connection:
+          $ref: '#/components/schemas/ConnectionRef'
+      required: [connection]
+
+    Connection:
+      type: object
+      properties:
+        id: { type: number }
+        from: { $ref: '#/components/schemas/Station' }
+        to: { $ref: '#/components/schemas/Station' }
+        incident:
+          $ref: '#/components/schemas/Incident'
+      required: [id, from, to]
+
+    Route:
+      type: object
+      properties:
+        stations:
+          type: array
+          items: { $ref: '#/components/schemas/Station' }
+        delay: { $ref: '#/components/schemas/Delay' }
+        incidents:
+          type: array
+          items: { $ref: '#/components/schemas/Incident' }
+      required: [stations, delay, incidents]
+
+    JourneyBackend:
+      type: object
+      properties:
+        routes:
+          type: array
+          items: { $ref: '#/components/schemas/Route' }
+        distance: { type: number }
+        duration: { type: number }
+      required: [routes, distance, duration]
+
+    Coordinates:
+      type: object
+      properties:
+        longitude: { type: number, format: double }
+        latitude: { type: number, format: double }
+      required: [longitude, latitude]
+
+    JourneyStartState:
+      type: object
+      properties:
+        route_index: { type: integer }
+        position_in_route: { type: integer }
+        updated_at: { type: string, format: date-time }
+      required: [route_index, position_in_route, updated_at]
+
+    JourneyStartResponse:
+      type: object
+      properties:
+        journey_id: { type: string }
+        state: { $ref: '#/components/schemas/JourneyStartState' }
+      required: [journey_id, state]
+
+    ProgressBackend:
+      type: object
+      properties:
+        currentRoute: { type: integer }
+        currentStage: { type: integer }
+        currentConnection: { $ref: '#/components/schemas/Connection' }
+      required: [currentRoute, currentStage, currentConnection]
+
+    JourneyProgressBackend:
+      type: object
+      properties:
+        journeyId: { type: string }
+        routes:
+          type: array
+          items: { $ref: '#/components/schemas/Route' }
+        progress: { $ref: '#/components/schemas/ProgressBackend' }
+        delay: { $ref: '#/components/schemas/Delay' }
+        firstStation: { $ref: '#/components/schemas/Station' }
+        lastStation: { $ref: '#/components/schemas/Station' }
+      required: [journeyId, routes, progress, delay, firstStation, lastStation]
+
+    FinishedJourney:
+      type: object
+      properties:
+        userId: { type: string }
+        journeyId: { type: string }
+        from:
+          type: object
+          properties:
+            name: { type: string }
+          required: [name]
+        to:
+          type: object
+          properties:
+            name: { type: string }
+          required: [name]
+        startedAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time }
+      required: [userId, journeyId, from, to, startedAt, finishedAt]
+
+    IncidentType:
+      type: string
+      enum: [ISSUES, DELAY, SEVERE_BLOCKER]
+
+    ReporterType:
+      type: string
+      enum: [USER, DISPATCHER, EXTERNAL_SYSTEM]
+
+    Reporter:
+      type: object
+      properties:
+        id: { type: string }
+        type: { $ref: '#/components/schemas/ReporterType' }
+      required: [id, type]
+
+    Location:
+      type: object
+      properties:
+        longitude: { type: number, format: double }
+        latitude: { type: number, format: double }
+      required: [longitude, latitude]
+
+    RouteReference:
+      type: object
+      properties:
+        origin: { type: string }
+        destination: { type: string }
+        transportVehicleId: { type: string }
+      required: [origin, destination, transportVehicleId]
+
+    IncidentReportDetails:
+      type: object
+      properties:
+        reportedOnRoute:
+          oneOf:
+            - $ref: '#/components/schemas/RouteReference'
+            - type: 'null'
+
+    IncidentReport:
+      type: object
+      properties:
+        id: { type: string }
+        location: { $ref: '#/components/schemas/Location' }
+        reporter: { $ref: '#/components/schemas/Reporter' }
+        incidentType: { $ref: '#/components/schemas/IncidentType' }
+        details: { $ref: '#/components/schemas/IncidentReportDetails' }
+        timestamp: { type: string, format: date-time }
+        description: { type: string }
+      required: [id, location, reporter, incidentType, details, timestamp]
+
+    CreateIncidentRequest:
+      type: object
+      properties:
+        userId: { type: string }
+        incidentType: { $ref: '#/components/schemas/IncidentType' }
+        description: { type: string }
+      required: [userId, incidentType]
+
+    MockLocationRequest:
+      type: object
+      properties:
+        userId: { type: string }
+        longitude: { type: number, format: double }
+        latitude: { type: number, format: double }
+      required: [userId, longitude, latitude]
+
+    MockLocationResponse:
+      type: object
+      properties:
+        message: { type: string }
+        userId: { type: string }
+        longitude: { type: number, format: double }
+        latitude: { type: number, format: double }
+      required: [message, userId, longitude, latitude]
+
+
