@@ -22,7 +22,9 @@ class JourneyService {
             stations.push({ name: end.name });
         // De-duplicate any accidental repeats
         const deduped = stations.filter((s, i, arr) => i === 0 || s.name !== arr[i - 1].name);
-        const route = { stations: deduped, delay: { time: 0 }, incidents: [] };
+        // Create mock incidents for testing
+        const mockIncidents = this.createMockIncidents(deduped);
+        const route = { stations: deduped, delay: { time: 0 }, incidents: mockIncidents };
         const distanceKm = this.computeRouteDistanceKm(deduped);
         const approxDurationMin = this.estimateDurationMinutes(distanceKm);
         const distance = distanceKm;
@@ -106,6 +108,41 @@ class JourneyService {
     }
     deg2rad(deg) {
         return deg * (Math.PI / 180);
+    }
+    createMockIncidents(stations) {
+        // Create mock incidents only if we have enough stations
+        if (stations.length < 3)
+            return [];
+        const incidents = [];
+        // Add a mock incident around the middle of the route
+        const midIndex = Math.floor(stations.length / 2);
+        if (midIndex > 0 && midIndex < stations.length - 1) {
+            const connection = {
+                id: 1,
+                from: stations[midIndex],
+                to: stations[midIndex + 1]
+            };
+            incidents.push({
+                connection,
+                type: 'DELAY',
+                severity: 'medium'
+            });
+        }
+        // Optionally add another incident near the beginning
+        if (stations.length > 5) {
+            const earlyIndex = Math.floor(stations.length / 4);
+            const connection = {
+                id: 2,
+                from: stations[earlyIndex],
+                to: stations[earlyIndex + 1]
+            };
+            incidents.push({
+                connection,
+                type: 'ISSUES',
+                severity: 'small'
+            });
+        }
+        return incidents;
     }
 }
 exports.JourneyService = JourneyService;

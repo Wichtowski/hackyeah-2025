@@ -1,14 +1,64 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Route, Station, Incident } from '@/types/journey';
+import { Route, Station, Incident, Journey as AppJourney, CommunicationMethod } from '@/types/journey';
 import { useJourney } from '@/contexts/JourneyContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import IncidentReportForm from '@/components/incident-report-form';
 import { useRouter } from 'expo-router';
 import { useRoute } from '@/contexts/RouteContext';
+import { apiClient, type Journey as SdkJourney, type IncidentType } from '@journey-radar/sdk';
+
+// Transform SDK Journey to App Journey
+const transformSdkJourneyToAppJourney = (
+  sdkJourney: SdkJourney,
+  sourceStation: Station,
+  destinationStation: Station
+): AppJourney => {
+  const journeyId = `journey_${Date.now()}`;
+  
+  return {
+    id: journeyId,
+    title: `${sourceStation.name} → ${destinationStation.name}`,
+    distance: sdkJourney.distance,
+    duration: sdkJourney.durationInSeconds,
+    routes: sdkJourney.routes.map((route, routeIndex) => ({
+      id: `route_${journeyId}_${routeIndex}`,
+      stations: route.stations.map((station, stationIndex) => ({
+        id: `station_${journeyId}_${routeIndex}_${stationIndex}`,
+        name: station.name,
+        position: undefined,
+      })),
+      delay: route.delay,
+      incidents: route.incidents.map((incident, incidentIndex) => ({
+        id: `incident_${journeyId}_${routeIndex}_${incidentIndex}`,
+        stationId: `station_${journeyId}_${routeIndex}_${route.stations.indexOf(incident.connection.from)}`,
+        position: { longitude: 0, latitude: 0 }, // SDK doesn't provide position for incidents
+        description: incident.type,
+        severity: incident.severity,
+        type: incident.type,
+      })),
+      communicationMethod: 'train' as CommunicationMethod, // SDK doesn't provide this, defaulting to train
+      duration: sdkJourney.durationInSeconds / sdkJourney.routes.length, // Distribute duration evenly
+    })),
+  };
+};
+
+// Map severity to IncidentType enum
+const mapSeverityToIncidentType = (severity: string): IncidentType => {
+  switch (severity) {
+    case 'low':
+      return 'ISSUES' as IncidentType;
+    case 'medium':
+      return 'DELAY' as IncidentType;
+    case 'severe':
+      return 'SEVERE_BLOCKER' as IncidentType;
+    default:
+      return 'ISSUES' as IncidentType;
+  }
+};
 
 const getIncidentIcon = (type: string): keyof typeof MaterialIcons.glyphMap => {
   switch (type) {
@@ -173,12 +223,15 @@ export default function JourneyScreen(): React.JSX.Element {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const [showIncidentForm, setShowIncidentForm] = useState(false);
-  const { currentJourney, savedJourneys } = useJourney();
-  const { setSelectedMapStation } = useRoute();
+  const [isSubmittingIncident, setIsSubmittingIncident] = useState(false);
+  const { currentJourney, savedJourneys, setCurrentJourney, addFavoriteJourney, removeFavoriteJourney, isFavorite } = useJourney();
+  const { setSelectedMapStation, sourceStation, destinationStation } = useRoute();
   const router = useRouter();
 
   // Use current journey if available, otherwise use the first saved journey as fallback
   const journey = currentJourney || savedJourneys[0];
+  
+  const isJourneyFavorite = journey ? isFavorite(journey.id) : false;
 
   const handleStationPress = (station: Station) => {
     console.log('Station pressed:', station);
@@ -205,6 +258,16 @@ export default function JourneyScreen(): React.JSX.Element {
     
     setSelectedMapStation(stationWithPosition);
     router.push('/map');
+  };
+
+  const handleToggleFavorite = () => {
+    if (!journey) return;
+    
+    if (isJourneyFavorite) {
+      removeFavoriteJourney(journey.id);
+    } else {
+      addFavoriteJourney(journey);
+    }
   };
 
   // If no journey is available, show a message
@@ -235,6 +298,17 @@ export default function JourneyScreen(): React.JSX.Element {
                 {journey.title || `Aktywna trasa do ${lastRouteStationName}`}
               </Text>
             </View>
+            <TouchableOpacity
+              style={[styles.favoriteButton, { backgroundColor: colors.background }]}
+              onPress={handleToggleFavorite}
+              activeOpacity={0.7}
+            >
+              <MaterialIcons 
+                name={isJourneyFavorite ? "favorite" : "favorite-border"} 
+                size={24} 
+                color={isJourneyFavorite ? colors.pink : colors.text} 
+              />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -265,9 +339,58 @@ export default function JourneyScreen(): React.JSX.Element {
         visible={showIncidentForm}
         onClose={() => setShowIncidentForm(false)}
         journey={journey}
-        onSubmit={(payload) => {
-          console.log('Incident reported:', payload);
-          // TODO: Send to backend
+        onSubmit={async (payload) => {
+          if (isSubmittingIncident) return;
+          
+          setIsSubmittingIncident(true);
+          try {
+            console.log('Submitting incident:', payload);
+            
+            // Map severity to IncidentType
+            const incidentType = mapSeverityToIncidentType(payload.severity);
+            
+            // Submit incident to backend
+            await apiClient.reportIncident({
+              userId: 'user_1', // TODO: Replace with actual user ID from auth context
+              incidentType,
+              description: payload.details,
+            });
+            
+            console.log('Incident submitted successfully');
+            
+            // Reload journey to get updated incident data
+            if (sourceStation && destinationStation) {
+              console.log('Reloading journey...');
+              
+              const sdkJourney = await apiClient.getJourney(
+                { station: { name: sourceStation.name } },
+                { station: { name: destinationStation.name } }
+              );
+              
+              // Transform and update current journey
+              const updatedJourney = transformSdkJourneyToAppJourney(
+                sdkJourney,
+                sourceStation,
+                destinationStation
+              );
+              
+              setCurrentJourney(updatedJourney);
+              console.log('Journey reloaded with new incidents');
+            } else {
+              console.warn('Cannot reload journey: source or destination station not available');
+            }
+            
+            setShowIncidentForm(false);
+          } catch (error) {
+            console.error('Error submitting incident:', error);
+            Alert.alert(
+              'Błąd',
+              'Nie udało się zgłosić incydentu. Spróbuj ponownie.',
+              [{ text: 'OK' }]
+            );
+          } finally {
+            setIsSubmittingIncident(false);
+          }
         }}
       />
     </SafeAreaView>
@@ -278,9 +401,15 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
   header: { padding: 20, paddingTop: 10 },
-  headerTop: { flexDirection: 'row', alignItems: 'flex-start' },
+  headerTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
   headerTitle: { flex: 1, marginLeft: 16 },
   mainTitle: { fontSize: 24, fontWeight: 'bold', lineHeight: 32 },
+  favoriteButton: {
+    padding: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    marginTop: 4,
+  },
   treeContainer: {
     paddingHorizontal: 20,
     paddingVertical: 20,

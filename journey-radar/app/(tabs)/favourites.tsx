@@ -14,19 +14,19 @@ export default function FavouritesScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const { setSourceStation, setDestinationStation } = useRoute();
-  const { savedJourneys, removeSavedJourney, setCurrentJourney } = useJourney();
+  const { favoriteJourneys, removeFavoriteJourney, setCurrentJourney } = useJourney();
 
   const handleDeleteJourney = (journeyId: string) => {
     Alert.alert(
-      'Usuń podróż',
-      'Potwierdasz, że chcesz usunąć tę podróż?',
+      'Usuń z ulubionych',
+      'Potwierdasz, że chcesz usunąć tę podróż z ulubionych?',
       [
         { text: 'Anuluj', style: 'cancel' },
         {
           text: 'Usuń',
           style: 'destructive',
           onPress: () => {
-            removeSavedJourney(journeyId);
+            removeFavoriteJourney(journeyId);
           }
         }
       ]
@@ -76,11 +76,11 @@ export default function FavouritesScreen() {
 
         <View style={styles.journeysWrapper}>
           <JourneysList
-            journeys={savedJourneys}
+            journeys={favoriteJourneys}
             title="Ulubione Podróże"
             icon="heart"
             emptyStateTitle="Brak ulubionych podróży"
-            emptyStateText="Zapisz swoje często używane podróże tutaj."
+            emptyStateText="Dodaj podróże do ulubionych, aby szybko je odnaleźć."
             onUseJourney={handleUseJourney}
             onDeleteJourney={handleDeleteJourney}
             showActions={true}

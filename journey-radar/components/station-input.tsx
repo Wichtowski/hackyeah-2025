@@ -4,11 +4,15 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
+  FlatList,
+  Text,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
 import { Station } from '@/types/journey';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import LocalStopsService, { StopWithDegrees } from '@/services/localStopsService';
 
 export interface StationInputProps {
   onSourceChange: (station: Station | null) => void;
@@ -17,6 +21,7 @@ export interface StationInputProps {
   destinationStation: Station | null;
   absolutePosition?: boolean;
   enableChevron?: boolean;
+  onFocusChange?: (isFocused: boolean) => void;
 }
 
 export const StationInput: React.FC<StationInputProps> = ({
@@ -26,6 +31,7 @@ export const StationInput: React.FC<StationInputProps> = ({
   destinationStation,
   absolutePosition = true,
   enableChevron = false,
+  onFocusChange,
 }) => {
   const colorScheme = useColorScheme();
   const theme = Colors[colorScheme ?? 'light'];
@@ -36,35 +42,92 @@ export const StationInput: React.FC<StationInputProps> = ({
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   const [isSourceFocused, setIsSourceFocused] = useState<boolean>(false);
   const [isDestinationFocused, setIsDestinationFocused] = useState<boolean>(false);
+  const [sourceSuggestions, setSourceSuggestions] = useState<StopWithDegrees[]>([]);
+  const [destinationSuggestions, setDestinationSuggestions] = useState<StopWithDegrees[]>([]);
 
   useEffect(() => { setSourceText(sourceStation?.name || ''); }, [sourceStation]);
   useEffect(() => { setDestinationText(destinationStation?.name || ''); }, [destinationStation]);
 
+  // Notify parent about focus state changes
+  useEffect(() => {
+    const isFocused = isSourceFocused || isDestinationFocused;
+    onFocusChange?.(isFocused);
+  }, [isSourceFocused, isDestinationFocused, onFocusChange]);
+
   const handleSourceChange = (text: string): void => {
     setSourceText(text);
+    
+    // Get autocomplete suggestions and sort alphabetically
+    const suggestions = LocalStopsService.searchByNamePrefix(text);
+    // Filter out destination station if it's selected
+    const filteredSuggestions = destinationStation 
+      ? suggestions.filter(s => s.name !== destinationStation.name)
+      : suggestions;
+    const sortedSuggestions = filteredSuggestions.sort((a, b) => a.name.localeCompare(b.name));
+    setSourceSuggestions(sortedSuggestions);
+    
     if (text.trim()) {
       onSourceChange({
         id: `source-${text}`,
         name: text,
         position: { latitude: 50.05936, longitude: 19.93435 },
       });
-    } else onSourceChange(null);
+    } else {
+      onSourceChange(null);
+      setSourceSuggestions([]);
+    }
   };
 
   const handleDestinationChange = (text: string): void => {
     setDestinationText(text);
+    
+    // Get autocomplete suggestions and sort alphabetically
+    const suggestions = LocalStopsService.searchByNamePrefix(text);
+    // Filter out source station if it's selected
+    const filteredSuggestions = sourceStation 
+      ? suggestions.filter(s => s.name !== sourceStation.name)
+      : suggestions;
+    const sortedSuggestions = filteredSuggestions.sort((a, b) => a.name.localeCompare(b.name));
+    setDestinationSuggestions(sortedSuggestions);
+    
     if (text.trim()) {
       onDestinationChange({
         id: `destination-${text}`,
         name: text,
         position: { latitude: 50.0647, longitude: 19.945 },
       });
-    } else onDestinationChange(null);
+    } else {
+      onDestinationChange(null);
+      setDestinationSuggestions([]);
+    }
+  };
+
+  const selectSourceSuggestion = (stop: StopWithDegrees): void => {
+    setSourceText(stop.name);
+    onSourceChange({
+      id: stop.id,
+      name: stop.name,
+      position: { latitude: stop.latitude, longitude: stop.longitude },
+    });
+    setSourceSuggestions([]);
+    Keyboard.dismiss();
+  };
+
+  const selectDestinationSuggestion = (stop: StopWithDegrees): void => {
+    setDestinationText(stop.name);
+    onDestinationChange({
+      id: stop.id,
+      name: stop.name,
+      position: { latitude: stop.latitude, longitude: stop.longitude },
+    });
+    setDestinationSuggestions([]);
+    Keyboard.dismiss();
   };
 
   const clearSource = (): void => {
     setSourceText('');
     onSourceChange(null);
+    setSourceSuggestions([]);
   };
 
   const swapStations = (): void => {
@@ -107,7 +170,7 @@ export const StationInput: React.FC<StationInputProps> = ({
                   value={sourceText}
                   onChangeText={handleSourceChange}
                   onFocus={() => setIsSourceFocused(true)}
-                  onBlur={() => setIsSourceFocused(false)}
+                  onBlur={() => setTimeout(() => setIsSourceFocused(false), 200)}
                   placeholder="Stacja początkowa"
                   placeholderTextColor="#888"
                   autoComplete="off"
@@ -118,6 +181,31 @@ export const StationInput: React.FC<StationInputProps> = ({
                   </TouchableOpacity>
                 )}
               </View>
+              
+              {isSourceFocused && sourceSuggestions.length > 0 && (
+                <View style={[styles.suggestionsContainer, { backgroundColor: theme.background }]}>
+                  <FlatList
+                    data={sourceSuggestions}
+                    keyExtractor={(item) => item.id}
+                    scrollEnabled={true}
+                    nestedScrollEnabled={true}
+                    style={styles.suggestionsList}
+                    keyboardShouldPersistTaps="handled"
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[styles.suggestionItem, { borderBottomColor: '#333' }]}
+                        onPress={() => selectSourceSuggestion(item)}
+                      >
+                        <Ionicons name="location-outline" size={16} color={accent} style={styles.suggestionIcon} />
+                        <View style={styles.suggestionTextContainer}>
+                          <Text style={[styles.suggestionName, { color: theme.text }]}>{item.name}</Text>
+                          <Text style={styles.suggestionCategory}>{item.category}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              )}
             </View>
 
             <View style={[styles.separatorLine, { backgroundColor: '#333' }]} />
@@ -137,7 +225,7 @@ export const StationInput: React.FC<StationInputProps> = ({
                   value={destinationText}
                   onChangeText={handleDestinationChange}
                   onFocus={() => setIsDestinationFocused(true)}
-                  onBlur={() => setIsDestinationFocused(false)}
+                  onBlur={() => setTimeout(() => setIsDestinationFocused(false), 200)}
                   placeholder="Stacja docelowa"
                   placeholderTextColor="#888"
                   autoComplete="off"
@@ -148,6 +236,31 @@ export const StationInput: React.FC<StationInputProps> = ({
                   </TouchableOpacity>
                 )}
               </View>
+              
+              {isDestinationFocused && destinationSuggestions.length > 0 && (
+                <View style={[styles.suggestionsContainer, { backgroundColor: theme.background }]}>
+                  <FlatList
+                    data={destinationSuggestions}
+                    keyExtractor={(item) => item.id}
+                    scrollEnabled={true}
+                    nestedScrollEnabled={true}
+                    style={styles.suggestionsList}
+                    keyboardShouldPersistTaps="handled"
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={[styles.suggestionItem, { borderBottomColor: '#333' }]}
+                        onPress={() => selectDestinationSuggestion(item)}
+                      >
+                        <Ionicons name="location-outline" size={16} color={accent} style={styles.suggestionIcon} />
+                        <View style={styles.suggestionTextContainer}>
+                          <Text style={[styles.suggestionName, { color: theme.text }]}>{item.name}</Text>
+                          <Text style={styles.suggestionCategory}>{item.category}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              )}
             </View>
           </>
         )}
@@ -226,5 +339,39 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignSelf: 'center',
     marginTop: 8
+  },
+  suggestionsContainer: {
+    marginTop: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#333',
+    maxHeight: 200,
+    overflow: 'hidden',
+  },
+  suggestionsList: {
+    maxHeight: 200,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderBottomWidth: 1,
+  },
+  suggestionIcon: {
+    marginRight: 12,
+  },
+  suggestionTextContainer: {
+    flex: 1,
+  },
+  suggestionName: {
+    fontSize: 15,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  suggestionCategory: {
+    fontSize: 12,
+    color: '#888',
+    textTransform: 'capitalize',
   },
 });

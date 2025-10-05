@@ -57,6 +57,7 @@ export default function HomeScreen() {
   const { getLastUsedJourneys, removeSavedJourney, setCurrentJourney, addSavedJourney } = useJourney();
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
   // Animation values
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -80,6 +81,15 @@ export default function HomeScreen() {
     ]).start();
   }, [sourceStation, destinationStation, slideAnim, opacityAnim]);
 
+  // Validate that source and destination are different
+  useEffect(() => {
+    if (sourceStation && destinationStation && sourceStation.name === destinationStation.name) {
+      setSearchError('Stacja początkowa i docelowa nie mogą być takie same');
+    } else if (searchError === 'Stacja początkowa i docelowa nie mogą być takie same') {
+      setSearchError(null);
+    }
+  }, [sourceStation, destinationStation]);
+
   const handleSourceChange = (station: Station | null): void => {
     setSourceStation(station);
     console.log('Source station set to:', station);
@@ -88,12 +98,16 @@ export default function HomeScreen() {
   const handleDestinationChange = (station: Station | null): void => {
     setDestinationStation(station);
     console.log('Destination station set to:', station);
-    setSearchError(null);
   };
 
   const handleSearch = async () => {
     if (!sourceStation || !destinationStation) {
       setSearchError('Proszę podać obie stacje');
+      return;
+    }
+
+    if (sourceStation.name === destinationStation.name) {
+      setSearchError('Stacja początkowa i docelowa nie mogą być takie same');
       return;
     }
 
@@ -195,6 +209,7 @@ export default function HomeScreen() {
             sourceStation={sourceStation}
             destinationStation={destinationStation}
             absolutePosition={false}
+            onFocusChange={setIsInputFocused}
           />
           
           <Animated.View
@@ -215,11 +230,11 @@ export default function HomeScreen() {
                 styles.searchButton,
                 {
                   backgroundColor: colors.green,
-                  opacity: isSearching ? 0.5 : 1,
+                  opacity: (isSearching || (sourceStation && destinationStation && sourceStation.name === destinationStation.name)) ? 0.5 : 1,
                 },
               ]}
               onPress={handleSearch}
-              disabled={!sourceStation || !destinationStation || isSearching}
+              disabled={!sourceStation || !destinationStation || isSearching || (sourceStation && destinationStation && sourceStation.name === destinationStation.name)}
               activeOpacity={0.85}
             >
               {isSearching ? (
@@ -241,20 +256,39 @@ export default function HomeScreen() {
           )}
         </View>
 
-        <View style={styles.journeysWrapper}>
-          <JourneysList
-            journeys={lastUsedJourneys}
-            title="Ostatnie Podróże"
-            maxItems={1}
-            icon="time"
-            emptyStateTitle="Brak ostatnich podróży"
-            emptyStateText="Twoje ostatnie podróże pojawią się tutaj."
-            onUseJourney={handleUseJourney}
-            onDeleteJourney={handleDeleteJourney}
-            showActions={true}
-            colorsOverride={colors}
-          />
-        </View>
+        {!isInputFocused && (
+          <View style={styles.journeysWrapper}>
+            <JourneysList
+              journeys={lastUsedJourneys}
+              title="Ostatnie Podróże"
+              maxItems={1}
+              icon="time"
+              emptyStateTitle="Brak ostatnich podróży"
+              emptyStateText="Twoje ostatnie podróże pojawią się tutaj."
+              onUseJourney={handleUseJourney}
+              onDeleteJourney={handleDeleteJourney}
+              showActions={true}
+              colorsOverride={colors}
+            />
+          </View>
+        )}
+
+        {isInputFocused && (
+          <View style={styles.journeysWrapper}>
+            <JourneysList
+              journeys={lastUsedJourneys}
+              title="Ostatnie Podróże"
+              maxItems={1}
+              icon="time"
+              emptyStateTitle="Brak ostatnich podróży"
+              emptyStateText="Twoje ostatnie podróże pojawią się tutaj."
+              onUseJourney={handleUseJourney}
+              onDeleteJourney={handleDeleteJourney}
+              showActions={true}
+              colorsOverride={colors}
+            />
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
