@@ -1,15 +1,14 @@
-import TransportSelector from '@/components/transport-selector';
-import { StationInput } from '@/components/station-input';
-import { Header } from '@/components/header';
+import {StationInput} from '@/components/station-input';
+import {Header} from '@/components/header';
 import ApiHealthButton from '@/components/api-health-button';
-import { useStationState } from '@/hooks/use-station-state';
+import {useStationState} from '@/hooks/use-station-state';
 
 export default function HomeScreen() {
-  const { sourceStation, destinationStation, handleSourceChange, handleDestinationChange } = useStationState();
+  const {sourceStation, destinationStation, handleSourceChange, handleDestinationChange} = useStationState();
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
-      <Header />
+    <div style={{position: 'relative', width: '100%', height: '100vh'}}>
+      <Header/>
       <StationInput
         onSourceChange={handleSourceChange}
         onDestinationChange={handleDestinationChange}
@@ -17,7 +16,6 @@ export default function HomeScreen() {
         destinationStation={destinationStation}
         absolutePosition={false}
       />
-      <TransportSelector />
       {/* ApiHealthButton positioned to the left of TransportSelector */}
       <div
         style={{
@@ -27,7 +25,7 @@ export default function HomeScreen() {
           zIndex: 1000,
         }}
       >
-        <ApiHealthButton />
+        <ApiHealthButton/>
       </div>
     </div>
   );
