@@ -25,15 +25,7 @@ export class MockJourneyRadarFacade implements JourneyRadarCapabilities {
     this.calls.push({ method, args });
   }
 
-  async planJourney(...args: [params: { origin: string; destination: string }]): Promise<any> {
-    this.recordCall('planJourney', args);
-    return Promise.resolve({ id: 'mock_journey_1' });
-  }
-
-  async getJourneyById(id: string): Promise<any> {
-    this.recordCall('getJourneyById', [id]);
-    return Promise.resolve({ id });
-  }
+  // removed legacy planJourney/getJourneyById
 
   async checkHealth(): Promise<{ status: string; domain: string }> {
     this.recordCall('checkHealth', []);
@@ -80,7 +72,7 @@ export class MockJourneyRadarFacade implements JourneyRadarCapabilities {
 
   async getJourneyProgress(journeyId: string, coordinates: Coordinates, userId?: string): Promise<JourneyProgress> {
     this.recordCall('getJourneyProgress', [journeyId, coordinates, userId]);
-    const stations = [{ name: 'A' }, { name: 'B' }];
+    const stations = [{ name: 'Rondo Matecznego' }, { name: 'Smolki' }];
     return Promise.resolve({
       journeyId,
       routes: [
