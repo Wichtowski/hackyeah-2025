@@ -11,7 +11,8 @@
     "build": "tsc && tsc-alias",
     "dev": "ts-node-dev -r tsconfig-paths/register --respawn --transpile-only src/application/index.ts",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "mock:location": "node scripts/locationMocker.js"
   },
   "keywords": [],
   "author": "",

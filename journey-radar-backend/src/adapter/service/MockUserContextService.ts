@@ -1,20 +1,24 @@
 import { UserContextService } from '../../domain/service/UserContextService';
 import { Location, Reporter, ReporterType, RouteReference } from '../../domain/model/IncidentReport';
+import { UserLocationRepository } from '../../domain/repository/UserLocationRepository';
 
 /**
  * Mock implementation of UserContextService for testing and development
  * In production, this would integrate with actual tracking and journey management systems
  */
 export class MockUserContextService implements UserContextService {
-  // Simulated user data store
-  private userLocations: Map<string, Location> = new Map();
   private userJourneys: Map<string, RouteReference | null> = new Map();
 
+  constructor(private readonly userLocationRepository: UserLocationRepository) {}
+
   async getCurrentLocation(userId: string): Promise<Location> {
-    // Check if we have a location for this user, otherwise return a default
-    const location = this.userLocations.get(userId);
-    if (location) {
-      return location;
+    // Check repository for user location
+    const userLocation = await this.userLocationRepository.getLocation(userId);
+    if (userLocation) {
+      return {
+        longitude: userLocation.longitude,
+        latitude: userLocation.latitude
+      };
     }
 
     // Default location (Warsaw Central Station)
@@ -41,7 +45,14 @@ export class MockUserContextService implements UserContextService {
 
   // Helper methods for testing - simulate user state
   setUserLocation(userId: string, location: Location): void {
-    this.userLocations.set(userId, location);
+    // This is now deprecated in favor of using the repository directly
+    // Kept for backward compatibility with existing tests
+    this.userLocationRepository.saveLocation({
+      userId,
+      longitude: location.longitude,
+      latitude: location.latitude,
+      timestamp: new Date()
+    });
   }
 
   setUserJourney(userId: string, journey: RouteReference | null): void {
@@ -49,8 +60,7 @@ export class MockUserContextService implements UserContextService {
   }
 
   clearUserData(userId: string): void {
-    this.userLocations.delete(userId);
+    // Note: This won't clear the repository data, only journey data
     this.userJourneys.delete(userId);
   }
 }
-
