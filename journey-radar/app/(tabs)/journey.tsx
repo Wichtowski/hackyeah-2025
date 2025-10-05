@@ -32,19 +32,28 @@ const transformSdkJourneyToAppJourney = (
         position: undefined,
       })),
       delay: route.delay,
-      incidents: route.incidents.map((incident, incidentIndex) => ({
-        id: `incident_${journeyId}_${routeIndex}_${incidentIndex}`,
-        stationId: `station_${journeyId}_${routeIndex}_${route.stations.indexOf(incident.connection.from)}`,
-        position: { longitude: 0, latitude: 0 },
-        description: incident.type,
-        severity: incident.severity,
-        type: incident.type,
-        connection: {
-          from: { id: `station_${journeyId}_${routeIndex}_${route.stations.indexOf(incident.connection.from)}`, name: incident.connection.from.name },
-          to: { id: `station_${journeyId}_${routeIndex}_${route.stations.indexOf(incident.connection.to)}`, name: incident.connection.to.name },
-          id: `${incident.connection.id}`,
-        },
-      })),
+      incidents: route.incidents
+        .filter(incident => incident.connection?.from && incident.connection?.to)
+        // Deduplicate incidents by connection from/to names
+        .filter((incident, index, self) => 
+          index === self.findIndex(i => 
+            i.connection.from.name === incident.connection.from.name && 
+            i.connection.to.name === incident.connection.to.name
+          )
+        )
+        .map((incident, incidentIndex) => ({
+          id: `incident_${journeyId}_${routeIndex}_${incidentIndex}`,
+          stationId: `${routeIndex}`,
+          position: { longitude: 0, latitude: 0 },
+          description: incident.type || 'problem',
+          severity: incident.severity || 'medium',
+          type: incident.type || 'Problem',
+          connection: {
+            from: { id: `station_${journeyId}_${routeIndex}_${route.stations.indexOf(incident.connection.from)}`, name: incident.connection.from.name },
+            to: { id: `station_${journeyId}_${routeIndex}_${route.stations.indexOf(incident.connection.to)}`, name: incident.connection.to.name },
+            id: `${incident.connection.id}`,
+          },
+        })),
       communicationMethod: 'train' as CommunicationMethod, // SDK doesn't provide this, defaulting to train
       duration: sdkJourney.durationInSeconds / sdkJourney.routes.length, // Distribute duration evenly
     })),
@@ -188,11 +197,11 @@ const RouteSection: React.FC<{
     <View style={styles.routeNode}>
       {route.stations.map((station, index) => {
         const stationIncidents = route.incidents.filter(
-          incident => incident.connection.from.name === station.name
+          incident => incident.connection?.from?.name === station.name
         );
 
         const hasIncidentBefore = route.stations.slice(0, index).some((prevStation) =>
-          route.incidents.some((incident) => incident.connection.from.name === prevStation.name)
+          route.incidents.some((incident) => incident.connection?.from?.name === prevStation.name)
         );
 
         const isCurrent = currentConnection && (station.name === currentConnection.from || station.name === currentConnection.to);
