@@ -128,6 +128,28 @@ export default function HomeScreen() {
       const appJourney = transformSdkJourneyToAppJourney(sdkJourney, sourceStation, destinationStation);
       console.log('Transformed to app journey:', appJourney);
 
+      // Start the journey session on backend
+      try {
+        const startResponse = await apiClient.startJourney(sdkJourney);
+        console.log('Journey started on backend:', startResponse);
+        
+        // Associate user with journey by reporting initial progress
+        if (startResponse.journey_id && sourceStation.position) {
+          try {
+            await apiClient.getJourneyStageWithUser(
+              startResponse.journey_id,
+              { longitude: sourceStation.position.longitude, latitude: sourceStation.position.latitude },
+              'user_1'
+            );
+            console.log('User associated with journey');
+          } catch (progressErr) {
+            console.warn('Could not associate user with journey:', progressErr);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not start journey on backend:', err);
+      }
+
       // Set as current journey and save it
       setCurrentJourney(appJourney);
       addSavedJourney(appJourney);
