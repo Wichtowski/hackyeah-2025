@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Journey, Route, Station, Incident } from '@/types/journey';
+import { Route, Station, Incident } from '@/types/journey';
 import { useJourney } from '@/contexts/JourneyContext';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import IncidentReportForm from '@/components/incident-report-form';
@@ -160,11 +160,6 @@ export default function JourneyScreen(): React.JSX.Element {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const [showIncidentForm, setShowIncidentForm] = useState(false);
-
-  const lastRouteStationName =
-    sampleJourney.routes[sampleJourney.routes.length - 1]
-      .stations[sampleJourney.routes[sampleJourney.routes.length - 1].stations.length - 1].name;
-
   const { currentJourney, savedJourneys } = useJourney();
 
   // Use current journey if available, otherwise use the first saved journey as fallback

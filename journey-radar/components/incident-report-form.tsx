@@ -1,5 +1,4 @@
-// journey-radar/components/incident-report-form.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,6 +25,7 @@ interface IncidentReportFormProps {
 const RADIUS_CONTROL = 12;
 const RADIUS_CARD = 16;
 const CARD_MAX_WIDTH = 420;
+const AUTO_CLOSE_DELAY = 1800;
 
 const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
   visible = false,
@@ -36,6 +36,7 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
   const colors = Colors[colorScheme ?? 'light'];
   const [selectedSeverity, setSelectedSeverity] = useState(SEVERITY_OPTIONS[1].value);
   const [details, setDetails] = useState('');
+  const [submitted, setSubmitted] = useState(false);
 
   const severityColorMap: Record<string, string> = {
     low: colors.blue,
@@ -48,6 +49,16 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
     [selectedSeverity]
   );
 
+  useEffect(() => {
+    if (submitted) {
+      const timer = setTimeout(() => {
+        setSubmitted(false);
+        onClose();
+      }, AUTO_CLOSE_DELAY);
+      return () => clearTimeout(timer);
+    }
+  }, [submitted, onClose]);
+
   if (!visible) return null;
 
   const handleSelectSeverity = (severity: string) => setSelectedSeverity(severity);
@@ -56,7 +67,7 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
     onSubmit?.({ severity: selectedSeverity, details });
     setDetails('');
     setSelectedSeverity(SEVERITY_OPTIONS[1].value);
-    onClose();
+    setSubmitted(true);
   };
 
   return (
@@ -65,14 +76,14 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={onClose}
+      onRequestClose={() => (!submitted ? onClose() : undefined)}
       presentationStyle="overFullScreen"
     >
       <KeyboardAvoidingView
         style={styles.overlay}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Pressable style={styles.backdrop} disabled={submitted} onPress={!submitted ? onClose : undefined} />
 
         <View
           style={[
@@ -84,150 +95,169 @@ const IncidentReportForm: React.FC<IncidentReportFormProps> = ({
             },
           ]}
         >
-          <View
-            style={[
-              styles.cardHeader,
-              { borderBottomColor: colors.blue + '25', paddingVertical: 16 },
-            ]}
-          >
-            <Text style={[styles.cardTitle, { color: colors.text }]}>
-              Zgłoszenie incydentu
-            </Text>
-            <TouchableOpacity
-              onPress={onClose}
-              style={styles.closeButton}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons name="close" size={22} color={colors.text} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={[styles.scrollContent, { paddingBottom: 24 }]}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>Na odcinku</Text>
-              <View
+          {submitted ? (
+            <View style={[styles.successContainer, { padding: 32 }]}>
+              <Ionicons name="checkmark-circle" size={56} color={colors.pink} />
+              <Text style={[styles.successTitle, { color: colors.text, marginTop: 18 }]}>
+                Dziękujemy za zgłoszenie!
+              </Text>
+              <Text
                 style={[
-                  styles.readonlyPill,
-                  {
-                    borderColor: colors.blue + '30',
-                    backgroundColor: colors.blue + '10',
-                    borderRadius: RADIUS_CONTROL,
-                  },
+                  styles.successNote,
+                  { color: colors.text + '80', marginTop: 10, textAlign: 'center' },
                 ]}
               >
-                <Text style={[styles.readonlyPillText, { color: colors.text }]}>
-                  Kraków Gł. → Wieliczka
-                </Text>
-              </View>
+                Twoje zgłoszenie zostało zapisane.
+              </Text>
             </View>
-
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>Poziom incydentu</Text>
-
+          ) : (
+            <>
               <View
                 style={[
-                  styles.severityContainer,
-                  { borderColor: colors.text + '25', borderRadius: RADIUS_CONTROL },
+                  styles.cardHeader,
+                  { borderBottomColor: colors.blue + '25', paddingVertical: 16 },
                 ]}
               >
-                {SEVERITY_OPTIONS.map(option => {
-                  const selected = option.value === selectedSeverity;
-                  const baseColor = severityColorMap[option.value] || colors.text;
-                  return (
-                    <TouchableOpacity
-                      key={option.value}
+                <Text style={[styles.cardTitle, { color: colors.text }]}>
+                  Zgłoszenie incydentu
+                </Text>
+                <TouchableOpacity
+                  onPress={onClose}
+                  style={styles.closeButton}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close" size={22} color={colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                style={styles.scroll}
+                contentContainerStyle={[styles.scrollContent, { paddingBottom: 24 }]}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={styles.section}>
+                  <Text style={[styles.label, { color: colors.text }]}>Na odcinku</Text>
+                  <View
+                    style={[
+                      styles.readonlyPill,
+                      {
+                        borderColor: colors.blue + '30',
+                        backgroundColor: colors.blue + '10',
+                        borderRadius: RADIUS_CONTROL,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.readonlyPillText, { color: colors.text }]}>
+                      Kraków Gł. → Wieliczka
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.section}>
+                  <Text style={[styles.label, { color: colors.text }]}>Poziom incydentu</Text>
+
+                  <View
+                    style={[
+                      styles.severityContainer,
+                      { borderColor: colors.text + '25', borderRadius: RADIUS_CONTROL },
+                    ]}
+                  >
+                    {SEVERITY_OPTIONS.map(option => {
+                      const selected = option.value === selectedSeverity;
+                      const baseColor = severityColorMap[option.value] || colors.text;
+                      return (
+                        <TouchableOpacity
+                          key={option.value}
+                          style={[
+                            styles.severityItem,
+                            {
+                              backgroundColor: selected ? baseColor + '22' : 'transparent',
+                            },
+                            selected && {
+                              borderColor: baseColor,
+                              borderWidth: 2,
+                              borderRadius: RADIUS_CONTROL,
+                            },
+                          ]}
+                          onPress={() => handleSelectSeverity(option.value)}
+                          activeOpacity={0.75}
+                        >
+                          <Text style={[styles.severityText, { color: baseColor }]}>
+                            {option.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {selectedSeverityDescription && (
+                    <Text
                       style={[
-                        styles.severityItem,
+                        styles.severityDescription,
+                        { color: colors.text + '90' },
+                      ]}
+                    >
+                      {selectedSeverityDescription}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.section}>
+                  <Text style={[styles.label, { color: colors.text }]}>
+                    Szczegóły (opcjonalne)
+                  </Text>
+                  <TextInput
+                    style={[
+                      styles.textArea,
+                      {
+                        borderColor: colors.text + '25',
+                        color: colors.text,
+                        backgroundColor: colors.background,
+                        borderRadius: RADIUS_CONTROL,
+                      },
+                    ]}
+                    value={details}
+                    onChangeText={setDetails}
+                    placeholder="Dodaj dodatkowy opis..."
+                    placeholderTextColor={colors.text + '60'}
+                    multiline
+                    textAlignVertical="top"
+                  />
+                </View>
+
+                <View style={styles.actions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.cancelButton,
+                      {
+                        backgroundColor: colors.text + '12',
+                        borderRadius: RADIUS_CONTROL,
+                        borderColor: colors.text + '25',
+                      },
+                    ]}
+                    onPress={onClose}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[styles.cancelText, { color: colors.text }]}>Anuluj</Text>
+                  </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.submitButton,
                         {
-                          backgroundColor: selected ? baseColor + '22' : 'transparent',
-                        },
-                        selected && {
-                          borderColor: baseColor,
-                          borderWidth: 2,
+                          backgroundColor: colors.pink,
                           borderRadius: RADIUS_CONTROL,
                         },
                       ]}
-                      onPress={() => handleSelectSeverity(option.value)}
-                      activeOpacity={0.75}
+                      onPress={handleSubmit}
+                      activeOpacity={0.85}
                     >
-                      <Text style={[styles.severityText, { color: baseColor }]}>
-                        {option.label}
-                      </Text>
+                      <Text style={[styles.submitText, { color: 'white' }]}>Wyślij</Text>
                     </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {selectedSeverityDescription && (
-                <Text
-                  style={[
-                    styles.severityDescription,
-                    { color: colors.text + '90' },
-                  ]}
-                >
-                  {selectedSeverityDescription}
-                </Text>
-              )}
-            </View>
-
-            <View style={styles.section}>
-              <Text style={[styles.label, { color: colors.text }]}>
-                Szczegóły (opcjonalne)
-              </Text>
-              <TextInput
-                style={[
-                  styles.textArea,
-                  {
-                    borderColor: colors.text + '25',
-                    color: colors.text,
-                    backgroundColor: colors.background,
-                    borderRadius: RADIUS_CONTROL,
-                  },
-                ]}
-                value={details}
-                onChangeText={setDetails}
-                placeholder="Dodaj dodatkowy opis..."
-                placeholderTextColor={colors.text + '60'}
-                multiline
-                textAlignVertical="top"
-              />
-            </View>
-
-            <View style={styles.actions}>
-              <TouchableOpacity
-                style={[
-                  styles.cancelButton,
-                  {
-                    backgroundColor: colors.text + '12',
-                    borderRadius: RADIUS_CONTROL,
-                    borderColor: colors.text + '25',
-                  },
-                ]}
-                onPress={onClose}
-                activeOpacity={0.75}
-              >
-                <Text style={[styles.cancelText, { color: colors.text }]}>Anuluj</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.submitButton,
-                  {
-                    backgroundColor: colors.pink,
-                    borderRadius: RADIUS_CONTROL,
-                  },
-                ]}
-                onPress={handleSubmit}
-                activeOpacity={0.85}
-              >
-                <Text style={[styles.submitText, { color: 'white' }]}>Wyślij</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
+                </View>
+              </ScrollView>
+            </>
+          )}
         </View>
       </KeyboardAvoidingView>
     </Modal>
@@ -313,6 +343,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitText: { fontSize: 15, fontWeight: '600' },
+  successContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  successNote: {
+    fontSize: 13,
+  },
 });
 
 export default IncidentReportForm;
