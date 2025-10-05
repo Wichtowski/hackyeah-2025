@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   TextInput,
-  Text,
   StyleSheet,
   TouchableOpacity,
-  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/theme';
-import { Station, StationInputProps } from '@/types/station';
+import { Station } from '@/types/journey';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+export interface StationInputProps {
+  onSourceChange: (station: Station | null) => void;
+  onDestinationChange: (station: Station | null) => void;
+  sourceStation: Station | null;
+  destinationStation: Station | null;
+  absolutePosition?: boolean;
+  enableChevron?: boolean;
+}
 
 export const StationInput: React.FC<StationInputProps> = ({
   onSourceChange,
@@ -20,7 +26,6 @@ export const StationInput: React.FC<StationInputProps> = ({
   destinationStation,
   absolutePosition = true,
   enableChevron = false,
-  onSearch,
 }) => {
   const [sourceText, setSourceText] = useState<string>(sourceStation?.name || '');
   const [destinationText, setDestinationText] = useState<string>(destinationStation?.name || '');
@@ -28,16 +33,49 @@ export const StationInput: React.FC<StationInputProps> = ({
   const [isSourceFocused, setIsSourceFocused] = useState<boolean>(false);
   const [isDestinationFocused, setIsDestinationFocused] = useState<boolean>(false);
 
+  // Update local text states when props change (from context)
+  useEffect(() => {
+    setSourceText(sourceStation?.name || '');
+  }, [sourceStation]);
+
+  useEffect(() => {
+    setDestinationText(destinationStation?.name || '');
+  }, [destinationStation]);
+
   const handleSourceChange = (text: string): void => {
     setSourceText(text);
-    if (!text.trim()) {
+    // For now, we'll create a mock station object
+    // In a real app, this would search for stations and return actual data
+    if (text.trim()) {
+      const mockStation: Station = {
+        id: `source-${text}`,
+        name: text,
+        position: {
+          latitude: 50.05936,
+          longitude: 19.93435,
+        },
+      };
+      onSourceChange(mockStation);
+    } else {
       onSourceChange(null);
     }
   };
 
   const handleDestinationChange = (text: string): void => {
     setDestinationText(text);
-    if (!text.trim()) {
+    // For now, we'll create a mock station object
+    // In a real app, this would search for stations and return actual data
+    if (text.trim()) {
+      const mockStation: Station = {
+        id: `destination-${text}`,
+        name: text,
+        position: {
+          latitude: 50.0647,
+          longitude: 19.9450,
+        },
+      };
+      onDestinationChange(mockStation);
+    } else {
       onDestinationChange(null);
     }
   };
@@ -47,18 +85,13 @@ export const StationInput: React.FC<StationInputProps> = ({
     onSourceChange(null);
   };
 
-  const clearDestination = (): void => {
-    setDestinationText('');
-    onDestinationChange(null);
-  };
-
   const swapStations = (): void => {
     const tempSource = sourceText;
     const tempSourceStation = sourceStation;
-    
+
     setSourceText(destinationText);
     setDestinationText(tempSource);
-    
+
     onSourceChange(destinationStation);
     onDestinationChange(tempSourceStation);
   };
@@ -67,14 +100,6 @@ export const StationInput: React.FC<StationInputProps> = ({
     console.log('Toggling collapse, current state:', isCollapsed);
     setIsCollapsed(!isCollapsed);
   };
-
-  const handleSearch = (): void => {
-    if (sourceText.trim() && destinationText.trim() && onSearch) {
-      onSearch(sourceText.trim(), destinationText.trim());
-    }
-  };
-
-  const showSearchButton = sourceText.trim().length > 0 && destinationText.trim().length > 0;
 
   return (
     <View style={[styles.container, !absolutePosition && styles.relativeContainer, enableChevron && isCollapsed && styles.collapsedContainer]}>
@@ -144,13 +169,6 @@ export const StationInput: React.FC<StationInputProps> = ({
           </TouchableOpacity>
         )}
       </View>
-
-      {showSearchButton && !isCollapsed && (
-        <TouchableOpacity onPress={handleSearch} style={styles.searchButton}>
-          <Ionicons name="search" size={20} color="#fff" />
-          <Text style={styles.searchButtonText}>Szukaj</Text>
-        </TouchableOpacity>
-      )}
     </View>
   );
 };
@@ -259,21 +277,5 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.icon + '20',
     borderRadius: 20,
     alignSelf: 'center',
-  },
-  searchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.light.green,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    marginTop: 12,
-    gap: 8,
-  },
-  searchButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

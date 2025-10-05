@@ -1,1 +1,1 @@
-export type CommuteType = '' | 'bus' | 'tram' | 'train';
+export type CommuteType = 'bus' | 'tram' | 'train';
