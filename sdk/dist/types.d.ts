@@ -100,9 +100,22 @@ export interface JourneyProgress {
     firstStation: Station;
     lastStation: Station;
 }
+export interface FinishedJourney {
+    userId: string;
+    journeyId: string;
+    from: {
+        name: string;
+    };
+    to: {
+        name: string;
+    };
+    startedAt: string;
+    finishedAt: string;
+}
 export interface ApiClient {
     getJourney(origin: Origin, destination: Destination): Promise<Journey>;
     startJourney(journey: Journey): Promise<JourneyStartResponse>;
     getJourneyStage(journeyId: string, coordinates: Coordinates): Promise<JourneyProgress>;
     healthCheck(): Promise<HealthResult>;
+    getJourneyHistory(userId: string): Promise<FinishedJourney[]>;
 }

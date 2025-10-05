@@ -14,6 +14,7 @@ const incidentRoutes_1 = require("./adapter/rest/incoming/incidentRoutes");
 const locationMockRoutes_1 = require("./adapter/rest/incoming/locationMockRoutes");
 const journeysRoutes_1 = require("./adapter/rest/incoming/journeysRoutes");
 const InMemoryJourneyProgressRepository_1 = require("./adapter/repository/InMemoryJourneyProgressRepository");
+const InMemoryFinishedJourneyRepository_1 = require("./adapter/repository/InMemoryFinishedJourneyRepository");
 const app = (0, express_1.default)();
 const port = 3000;
 // CORS configuration (allow common Expo dev origins + configurable env)
@@ -39,7 +40,8 @@ const incidentReportRepository = new InMemoryIncidentReportRepository_1.InMemory
 const userLocationRepository = new InMemoryUserLocationRepository_1.InMemoryUserLocationRepository();
 const userContextService = new MockUserContextService_1.MockUserContextService(userLocationRepository);
 const journeyProgressRepository = new InMemoryJourneyProgressRepository_1.InMemoryJourneyProgressRepository();
-const journeyRadarFacade = new JourneyRadarFacade_1.JourneyRadarFacade(incidentReportRepository, userContextService, userLocationRepository, journeyProgressRepository);
+const finishedJourneyRepository = new InMemoryFinishedJourneyRepository_1.InMemoryFinishedJourneyRepository();
+const journeyRadarFacade = new JourneyRadarFacade_1.JourneyRadarFacade(incidentReportRepository, userContextService, userLocationRepository, journeyProgressRepository, finishedJourneyRepository);
 app.use('/api', health_1.default); // legacy health route shape expected by SDK tests
 app.use('/api', (0, incidentRoutes_1.createIncidentRoutes)(journeyRadarFacade));
 app.use('/api', (0, locationMockRoutes_1.createLocationMockRoutes)(journeyRadarFacade));

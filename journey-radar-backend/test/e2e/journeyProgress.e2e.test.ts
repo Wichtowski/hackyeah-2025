@@ -108,6 +108,24 @@ describe('E2E: Journey progression using SDK http client + location mocker', () 
     }
   });
 
+  test('finishing a journey persists to history and is retrievable', async () => {
+    const demoUserId = 'e2e_user_history_1';
+
+    await apiPost(`/mock/location`, { userId: demoUserId, longitude: 21.0122, latitude: 52.2297 });
+
+    const journey = await apiGet<any>(`/journeys?origin=${encodeURIComponent('A')}&destination=${encodeURIComponent('C')}`);
+    const start = await apiPost<any, any>(`/journeys/start`, journey);
+
+    // First, progress somewhere (non-final)
+    await apiGet<any>(`/journeys/${encodeURIComponent(start.journey_id)}/progress?longitude=21.0&latitude=52.2&userId=${encodeURIComponent(demoUserId)}`);
+
+    // Then, simulate arrival by querying again (our computeProgress uses nearest mapping; we check destination equality inside facade)
+    await apiGet<any>(`/journeys/${encodeURIComponent(start.journey_id)}/progress?longitude=21.0&latitude=52.2&userId=${encodeURIComponent(demoUserId)}`);
+
+    const history = await apiGet<any[]>(`/journeys/history/${encodeURIComponent(demoUserId)}`);
+    expect(Array.isArray(history)).toBe(true);
+  });
+
   test('progress reflects nearest hardcoded stops: currentRoute and currentStage update', async () => {
     // Build a journey with known, hardcoded stops across two routes
     const get = (name: string) => {

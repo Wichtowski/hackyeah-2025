@@ -1,5 +1,6 @@
 import { IncidentReport } from '../model/IncidentReport';
 import { Coordinates, Destination, Journey, JourneyProgress, JourneyStartResponse, Origin } from '../model/Journey';
+import { FinishedJourney } from '../model/FinishedJourney';
 
 export interface JourneyRadarCapabilities {
   planJourney(params: { origin: string; destination: string }): Promise<any>;
@@ -11,5 +12,6 @@ export interface JourneyRadarCapabilities {
   // New contract-aligned capabilities
   getJourney(origin: Origin, destination: Destination): Promise<Journey>;
   startJourney(journey: Journey): Promise<JourneyStartResponse>;
-  getJourneyProgress(journeyId: string, coordinates: Coordinates): Promise<JourneyProgress>;
+  getJourneyProgress(journeyId: string, coordinates: Coordinates, userId?: string): Promise<JourneyProgress>;
+  getFinishedJourneys(userId: string): Promise<FinishedJourney[]>;
 }

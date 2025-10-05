@@ -5,6 +5,8 @@ const IncidentReport_1 = require("../model/IncidentReport");
 const JourneyService_1 = require("../service/JourneyService");
 const JourneyProgressService_1 = require("../service/JourneyProgressService");
 const sessions = new Map();
+const journeyIdToStartedAt = new Map();
+const journeyIdToUserId = new Map();
 class InMemoryProgressRepository {
     journeyIdToProgresses = new Map();
     async save(progress) {
@@ -30,12 +32,14 @@ class JourneyRadarFacade {
     incidentReportRepository;
     userContextService;
     userLocationRepository;
+    finishedJourneyRepository;
     journeyService;
     journeyProgressService;
-    constructor(incidentReportRepository, userContextService, userLocationRepository, journeyProgressRepository, journeyService = new JourneyService_1.JourneyService()) {
+    constructor(incidentReportRepository, userContextService, userLocationRepository, journeyProgressRepository, finishedJourneyRepository, journeyService = new JourneyService_1.JourneyService()) {
         this.incidentReportRepository = incidentReportRepository;
         this.userContextService = userContextService;
         this.userLocationRepository = userLocationRepository;
+        this.finishedJourneyRepository = finishedJourneyRepository;
         this.journeyService = journeyService;
         const repo = journeyProgressRepository ?? new InMemoryProgressRepository();
         this.journeyProgressService = new JourneyProgressService_1.JourneyProgressService(repo);
@@ -87,16 +91,54 @@ class JourneyRadarFacade {
     async startJourney(journey) {
         const journeyId = `journey-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         sessions.set(journeyId, journey);
-        const state = { route_index: 0, position_in_route: 0, updated_at: new Date().toISOString() };
+        const startedAt = new Date().toISOString();
+        journeyIdToStartedAt.set(journeyId, startedAt);
+        const state = { route_index: 0, position_in_route: 0, updated_at: startedAt };
         return { journey_id: journeyId, state };
     }
-    async getJourneyProgress(journeyId, coordinates) {
+    async getJourneyProgress(journeyId, coordinates, userId) {
         const journey = sessions.get(journeyId);
         if (!journey) {
             const empty = this.journeyService.computeJourney({ station: { name: 'Unknown' } }, { station: { name: 'Unknown' } });
             return await this.journeyProgressService.computeProgress(empty, coordinates, journeyId);
         }
-        return await this.journeyProgressService.computeProgress(journey, coordinates, journeyId);
+        const progress = await this.journeyProgressService.computeProgress(journey, coordinates, journeyId);
+        // Persist finished journey if reached destination and repository available
+        try {
+            const isAtFinalConnection = progress.progress.currentConnection.to.name === progress.lastStation.name;
+            if (isAtFinalConnection && this.finishedJourneyRepository) {
+                if (userId) {
+                    journeyIdToUserId.set(journeyId, userId);
+                }
+                const effectiveUserId = userId || journeyIdToUserId.get(journeyId);
+                if (effectiveUserId) {
+                    const finished = {
+                        userId: effectiveUserId,
+                        journeyId,
+                        from: progress.firstStation,
+                        to: progress.lastStation,
+                        startedAt: journeyIdToStartedAt.get(journeyId) || new Date().toISOString(),
+                        finishedAt: new Date().toISOString(),
+                    };
+                    await this.finishedJourneyRepository.save(finished);
+                    // cleanup
+                    sessions.delete(journeyId);
+                    journeyIdToUserId.delete(journeyId);
+                    journeyIdToStartedAt.delete(journeyId);
+                }
+            }
+        }
+        catch (e) {
+            // Non-fatal; history persistence should not break progress checks
+            // eslint-disable-next-line no-console
+            console.warn('History persistence failed:', e);
+        }
+        return progress;
+    }
+    async getFinishedJourneys(userId) {
+        if (!this.finishedJourneyRepository)
+            return [];
+        return this.finishedJourneyRepository.findByUserId(userId);
     }
 }
 exports.JourneyRadarFacade = JourneyRadarFacade;
