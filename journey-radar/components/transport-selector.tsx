@@ -226,7 +226,6 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    cursor: 'pointer',
     outline: 'none',
   },
   transportBubble: {
@@ -245,7 +244,6 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    cursor: 'pointer',
     outline: 'none',
   },
 };
